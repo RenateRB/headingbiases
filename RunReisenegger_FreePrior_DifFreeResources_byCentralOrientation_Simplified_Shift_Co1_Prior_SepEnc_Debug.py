@@ -49,9 +49,16 @@ assert FOURIER_BASIS_SIZE in [30, 50, 80]
 # ADD CONDITION AND CENTRAL ORIENTATION
 
 
+
 # Store observations
 assert (observations_x == sample).all()
 assert (observations_y == response).all()
+
+observations_x = observations_x + 180
+observations_y = observations_y + 180
+sample = sample + 180
+response = response + 180
+
 
 # Part: Partition data into folds. As described in the paper,
 # this is done within each subject.
@@ -232,7 +239,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
      #bayesianEstimate_sd_byStimulus = (bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * math.pow(180/math.pi,2)).sqrt()
 
      bayesianEstimate_avg_byStimulus = torch.where((bayesianEstimate_avg_byStimulus-grid).abs()<180, bayesianEstimate_avg_byStimulus, torch.where(bayesianEstimate_avg_byStimulus > 180, bayesianEstimate_avg_byStimulus-360, bayesianEstimate_avg_byStimulus+360))
-     assert float(((bayesianEstimate_avg_byStimulus-grid).abs()).max()) < 180, float(((bayesianEstimate_avg_byStimulus-grid).abs()).max())
+     assert float(((bayesianEstimate_avg_byStimulus-grid).abs()).max()) <= 180, float(((bayesianEstimate_avg_byStimulus-grid).abs()).max())
      posteriorMaxima = grid[posterior.argmax(dim=0)]
      posteriorMaxima = computeCircularMeanWeighted(posteriorMaxima.unsqueeze(1), likelihoods)
      encodingBias = computeCircularMeanWeighted(grid.unsqueeze(1), likelihoods)
@@ -350,10 +357,8 @@ def model(grid):
    ## In this dataset, all parameters are fitted across subjects.
    for CONDITION in [1]: #range(2):
     for CO in range(N_CO):
-     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CONDITION],dim=0)
+     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO],dim=0)
      prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO], dim=0)
-     #shift_by = GRID-int((grid-COs[CO]).abs().argmin())
-     #prior = torch.cat([prior_overall[shift_by:], prior_overall[:shift_by]], dim=0)
      ## Run the model at its current parameter values.
      loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
@@ -363,13 +368,14 @@ def model(grid):
        y_here = observations_y[torch.logical_and(centralOrientationPerTrial == COs[CO], condition==CONDITION)]
        x_here = observations_x[torch.logical_and(centralOrientationPerTrial == COs[CO], condition==CONDITION)]
 
-       MASK = (SQUARED_STIMULUS_SIMILARITY(COs[CO]-grid) > .5)
+       MASK = (SQUARED_STIMULUS_SIMILARITY(COs[CO]+180-grid) > .5)
 
        volumeExpected = (2-SQUARED_STIMULUS_DIFFERENCE(2*grid).abs())
        volumeExpected = SENSORY_SPACE_VOLUME * volumeExpected / volumeExpected.sum()
 
        def wrap180(x):
-          return ((x + 180) % 360) - 180
+          return x
+#          return ((x + 180) % 360) - 180
 
        grid_centered = wrap180(grid)
        print(grid_centered)
@@ -386,12 +392,13 @@ def model(grid):
        #priorExpected1 = torch.softmax(15*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]-32),dim=0)
        #priorExpected2 = torch.softmax(15*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]+32),dim=0)
        #priorExpected = .2*(priorExpected1 + priorExpected2)
-       priorExpected = torch.softmax(3*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]),dim=0)
+       priorExpected = torch.softmax(3*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]-180),dim=0)
 
        #axis[CO,1].plot(grid_centered[MASK].cpu(), priorExpected[MASK].detach().cpu())
        #axis[CO,1].scatter(grid_centered[MASK].cpu(), prior[MASK].detach().cpu())
-       axis[CO,1].plot(grid_centered[0:179].cpu(), priorExpected[0:179].detach().cpu())
-       axis[CO,1].plot(grid_centered[180:].cpu(), priorExpected[180:].detach().cpu())
+#       axis[CO,1].plot(grid_centered[0:179].cpu(), priorExpected[0:179].detach().cpu())
+ #      axis[CO,1].plot(grid_centered[180:].cpu(), priorExpected[180:].detach().cpu())
+       axis[CO,1].plot(grid_centered.cpu(), priorExpected.detach().cpu())
        axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu())
        axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
        #axis[CO,2].scatter(grid_centered.cpu(), (bayesianEstimate_model-grid).detach().cpu())
@@ -420,18 +427,18 @@ def model(grid):
        axis[CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK])
        axis[CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2)
        for w in [2,4,5,6,7]:
-          axis[CO][w].set_ylim(-60, 60)
+          axis[CO][w].set_ylim(-80, 80)
        axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK])
        axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2)
        for w in [2,4,5,6,7]:
-          axis[N_CO][w].set_ylim(-60, 60)
+          axis[N_CO][w].set_ylim(-80, 80)
 
        bound1, bound2 = COs[CO]-60, COs[CO]+60
        for w in range(8):
-         bound1, bound2 = CO_centered - 60, CO_centered + 60
+         bound1, bound2 = CO_centered - 60 + 180, CO_centered + 60 + 180
          axis[CO,w].plot([bound1, bound2], [0,0])
          axis[CO,w].scatter([CO_centered.cpu()], [0], color="purple", s=10)
-         axis[CO,w].set_xlim(-180,180)
+         axis[CO,w].set_xlim(0,360)
 
    if iteration % 1000 == 0:
 
@@ -455,7 +462,7 @@ def model(grid):
       if not torch.any(condition == CONDITION):
           continue
       for CO in range(N_CO):
-       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CONDITION], dim=0)
+       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO], dim=0)
        prior = torch.nn.functional.softmax(parameters["prior"] + init_parameters["priorByCO"][CO], dim=0)
        #shift_by = GRID-int((grid-COs[CO]).abs().argmin())
        print(f"COs[CO]: {COs[CO]}")
@@ -480,7 +487,24 @@ def model(grid):
    loss = loss + REG_WEIGHT * regularizer_total.sum()
 
    optim.zero_grad()
-   loss.backward(retain_graph=True)
+   loss.backward() #retain_graph=True)
+
+   maximumGradNorm = []
+   largestGradNorm = 0
+   ## For monitoring purposes, calculate the size of the gradients
+   for w in init_parameters:
+     if init_parameters[w].grad is not None:
+      maximumGradNorm.append(w)
+      gradNormMax = float(init_parameters[w].grad.abs().max())
+      maximumGradNorm.append(gradNormMax)
+      largestGradNorm = max(largestGradNorm, float(gradNormMax))
+      ## Optionally, in order to use SignGD, can now replace each
+      ## gradient by an indicator of its sign.
+      init_parameters[w].grad.data = torch.sign(init_parameters[w].grad.data)
+   if iteration % 10 == 0:
+     print(largestGradNorm, maximumGradNorm)
+
+
   #  print(init_parameters)
    #torch.nn.utils.clip_grad_norm_(init_parameters["sigma_logit"], max_norm=0.1, norm_type='inf') #clamp magnitude of the parameter updates   
    optim.step()
@@ -526,7 +550,7 @@ def model(grid):
 
 # Project the stimuli onto the discrete grid
 
-for P1 in [4]: #, 2, 4, 6, 8, 10]:
+for P1 in [6]: #, 2, 4, 6, 8, 10]:
 
   ##############################################
 # Initialize the model
@@ -536,13 +560,16 @@ for P1 in [4]: #, 2, 4, 6, 8, 10]:
   init_parameters["sigma_logit"] = -1 + MakeZeros(N_CO, 2)
   init_parameters["mixture_logit"] = MakeFloatTensor(N_CO*[-1])
   init_parameters["prior"] = MakeZeros(GRID)
-  init_parameters["volume"] = MakeZeros(2,GRID) #Different for each condition
+  init_parameters["volume"] = MakeZeros(3,GRID) #Different for each condition
   init_parameters["priorByCO"] = MakeZeros(N_CO,GRID)
+ # for CO in range(3):
+#     init_parameters["priorByCO"][CO] = 0.5*(3*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]-180))
+
   init_parameters["prior_logits_effect_weight"] = MakeZeros(1)
   #init_parameters["volumeBySubject"] = MakeZeros(2,N_SUBJECTS,2*FOURIER_BASIS_SIZE) #Different for each condition
   #init_parameters["volume_logits_effect_weight"] = MakeZeros(1)
 
-  init_parameters["SIGMA_priorByCO"] = MakeZeros(N_CO,2*FOURIER_BASIS_SIZE)
+#  init_parameters["SIGMA_priorByCO"] = MakeZeros(N_CO,2*FOURIER_BASIS_SIZE)
   #init_parameters["SIGMA_volumeBySubject"] = MakeZeros(2,N_SUBJECTS,2*FOURIER_BASIS_SIZE) #Different for each condition
 
 
