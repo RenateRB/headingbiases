@@ -139,7 +139,7 @@ def SQUARED_SENSORY_DIFFERENCE(x):
 
 def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, showLikelihood=False, grid=grid, responses_=None, parameters=None, computePredictions=False, subject=None, centralOrientation=None, sigma_stimulus=None, sigma2_stimulus=0, condition_=None, folds=None, lossReduce='mean'):
  #print(f"Current CO: {COs[centralOrientation]}")
- motor_variance = torch.exp(- parameters["log_motor_var"][centralOrientation])
+ motor_variance = torch.exp(- parameters["log_motor_var"][centralOrientation, condition_])
  # Part: Obtain the sensory noise variance.
  sigma2 = 2*torch.sigmoid(sigma_logit) #maybe change 2 for 4?
 #  print(f"sigma2: {sigma2}")
@@ -403,6 +403,7 @@ def model(grid):
        axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
        #axis[CO,2].scatter(grid_centered.cpu(), (bayesianEstimate_model-grid).detach().cpu())
        axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
+       axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
 
        #axis[CO,3].scatter(grid_centered.cpu(), (bayesianEstimate_sd_byStimulus_model).detach().cpu())
        axis[CO,3].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_sd_byStimulus_model)[MASK].detach().cpu())
@@ -430,7 +431,7 @@ def model(grid):
           axis[CO][w].set_ylim(-80, 80)
        axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK])
        axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2)
-       for w in [2,4,5,6,7]:
+       for w in [2,3,4,5,6,7]:
           axis[N_CO][w].set_ylim(-80, 80)
 
        bound1, bound2 = COs[CO]-60, COs[CO]+60
@@ -480,7 +481,7 @@ def model(grid):
 
 
    ELBO = loss # + regularizer4 + torch.nansum(logQPrior) #logQVolume.sum() + + regularizer3
-   print(f"Iteration: {iteration}, ELBO: {ELBO}, loss: {loss}") #, regularizer4: {regularizer4}, logQPrior: {torch.nansum(logQPrior)}") #, logQVolume.sum(), regularizer3,
+   print(f"Iteration: {iteration}, loss: {loss}") #, regularizer4: {regularizer4}, logQPrior: {torch.nansum(logQPrior)}") #, logQVolume.sum(), regularizer3,
    loss = ELBO
 
    loss = loss * (1/observations_y.size()[0])
@@ -556,7 +557,7 @@ for P1 in [6]: #, 2, 4, 6, 8, 10]:
 # Initialize the model
 # Part: Initialize the model
   init_parameters = {}
-  init_parameters["log_motor_var"] = MakeFloatTensor(N_CO*[0])
+  init_parameters["log_motor_var"] = MakeZeros(N_CO, 2)
   init_parameters["sigma_logit"] = -1 + MakeZeros(N_CO, 2)
   init_parameters["mixture_logit"] = MakeFloatTensor(N_CO*[-1])
   init_parameters["prior"] = MakeZeros(GRID)
