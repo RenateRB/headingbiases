@@ -522,6 +522,7 @@ def model(grid):
    #     loss_, bayesianEstimate, bayesianEstimate_sd, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][condition_], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, computePredictions=(iteration % 500 == 0), parameters=parameters, condition_=condition_, folds=testFolds, lossReduce='sum')
    #     crossValidLoss += loss_
 
+#   print(lossesBy500)
    if iteration % 500 == 0 and iteration > 0:
        lossesBy500.append(float(loss))
        crossLossesBy500.append(float(crossValidLoss))
@@ -534,10 +535,10 @@ def model(grid):
            print(iteration, "LossesBy500", " ".join([str(q) for q in lossesBy500]), file=outFile)
            for z, y in init_parameters.items():
                print(z, "\t", y.detach().cpu().numpy().tolist(), file=outFile)
-       if len(lossesBy500) > 1 and float(loss) >= lossesBy500[-2]-1e-5:
+       if len(lossesBy500) > 1 and lossesBy500[-1] >= lossesBy500[-2]-1e-5:
          learning_rate *= 0.8
          optim = torch.optim.SGD([y for _, y in init_parameters.items()], lr=learning_rate)
-       if len(lossesBy500) > 1 and float(loss) >= min(lossesBy500[:-1])-1e-5:
+       if len(lossesBy500) > 1 and lossesBy500[-1] >= min(lossesBy500[:-1])-1e-5:
          noImprovement += 1
        else:
          noImprovement = 0

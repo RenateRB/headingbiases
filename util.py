@@ -11,7 +11,7 @@ SHOW_PLOT = False
 def savePlot(*args, **kwargs):
     if "transparent" not in kwargs:
       kwargs["transparent"] = True
-    kwargs["optimize"]=True
+#    kwargs["optimize"]=True
     plt.savefig(*args, **kwargs, bbox_inches='tight') 
     if SHOW_PLOT:
        plt.show()

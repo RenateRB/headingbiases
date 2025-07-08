@@ -39,7 +39,7 @@ SHOW_PLOT = (len(sys.argv) < 6) or (sys.argv[5] == "SHOW_PLOT")
 DEVICE = 'cuda'
 #assert GRID == 180
 
-FOURIER_BASIS_SIZE = int(sys.argv[5])
+FOURIER_BASIS_SIZE = 50 #int(sys.argv[5])
 assert FOURIER_BASIS_SIZE in [30, 50, 80]
 #FILE = f"logs/CROSSVALID/{__file__.replace('_VIZ', '')}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt" #'C:\\Users\\Tate\\Documents\\unifying-theory-biases-main\\code\\Reisenegger\\logs\\CROSSVALID\\RunReisenegger_FreePrior_DifFreeResources.py_2_0_10.0_180.txt'
 
@@ -139,7 +139,7 @@ def SQUARED_SENSORY_DIFFERENCE(x):
 
 def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, showLikelihood=False, grid=grid, responses_=None, parameters=None, computePredictions=False, subject=None, centralOrientation=None, sigma_stimulus=None, sigma2_stimulus=0, condition_=None, folds=None, lossReduce='mean'):
  #print(f"Current CO: {COs[centralOrientation]}")
- motor_variance = torch.exp(- parameters["log_motor_var"][centralOrientation])
+ motor_variance = torch.exp(- parameters["log_motor_var"][centralOrientation, condition_])
  # Part: Obtain the sensory noise variance.
  sigma2 = 2*torch.sigmoid(sigma_logit) #maybe change 2 for 4?
 #  print(f"sigma2: {sigma2}")
@@ -355,10 +355,10 @@ def model(grid):
 
    ## Iterate over the conditions and possibly subjects, if parameters are fitted separately.
    ## In this dataset, all parameters are fitted across subjects.
-   for CONDITION in [1]: #range(2):
+   for CONDITION in [1]:
     for CO in range(N_CO):
-     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO],dim=0)
-     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO], dim=0)
+     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION],dim=0)
+     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0)
      ## Run the model at its current parameter values.
      loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
@@ -403,6 +403,7 @@ def model(grid):
        axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
        #axis[CO,2].scatter(grid_centered.cpu(), (bayesianEstimate_model-grid).detach().cpu())
        axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
+       axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
 
        #axis[CO,3].scatter(grid_centered.cpu(), (bayesianEstimate_sd_byStimulus_model).detach().cpu())
        axis[CO,3].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_sd_byStimulus_model)[MASK].detach().cpu())
@@ -430,7 +431,7 @@ def model(grid):
           axis[CO][w].set_ylim(-80, 80)
        axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK])
        axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2)
-       for w in [2,4,5,6,7]:
+       for w in [2,3,4,5,6,7]:
           axis[N_CO][w].set_ylim(-80, 80)
 
        bound1, bound2 = COs[CO]-60, COs[CO]+60
@@ -448,12 +449,12 @@ def model(grid):
      axis[0,3].set_title("Variability")
      axis[0,4].set_title("Attraction")
      axis[0,5].set_title("Repulsion")
-     axis[0,6].set_title("Smoothed")
-     axis[0,7].set_title("Raw")
+     axis[0,6].set_title("Bias (0)")
+     axis[0,7].set_title("Bias (1)")
 
      print("Saving plot...")
 
-     savePlot(f"figures/{__file__}_{P}-{P1}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}_{FOURIER_BASIS_SIZE}.pdf")
+     savePlot(f"figures/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}_{FOURIER_BASIS_SIZE}.pdf")
      plt.close()
 
      crossValidLoss = 0
@@ -462,8 +463,8 @@ def model(grid):
       if not torch.any(condition == CONDITION):
           continue
       for CO in range(N_CO):
-       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO], dim=0)
-       prior = torch.nn.functional.softmax(parameters["prior"] + init_parameters["priorByCO"][CO], dim=0)
+       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION], dim=0)
+       prior = torch.nn.functional.softmax(parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0)
        #shift_by = GRID-int((grid-COs[CO]).abs().argmin())
        print(f"COs[CO]: {COs[CO]}")
        #prior = torch.cat([prior_overall[shift_by:], prior_overall[:shift_by]], dim=0)
@@ -471,16 +472,16 @@ def model(grid):
        loss_2_4, bayesianEstimate_2_4, bayesianEstimate_sd_byStimulus_2_4, attraction, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%100 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=testFolds, lossReduce='sum', centralOrientation=CO)
        crossValidLoss += loss_2_4
 
-   regularizer1 = ((init_parameters["volume"][:,1:] - init_parameters["volume"][:,:-1]).pow(2).sum() + (init_parameters["volume"][:,0] - init_parameters["volume"][:,-1]).pow(2).sum())/GRID
+   regularizer1 = ((init_parameters["volume"][:,:,1:] - init_parameters["volume"][:,:,:-1]).pow(2).sum() + (init_parameters["volume"][:,:,0] - init_parameters["volume"][:,:,-1]).pow(2).sum())/GRID
    priorLogits = init_parameters["prior"].unsqueeze(0)
    regularizer2 = ((priorLogits[:,1:] - priorLogits[:,:-1]).pow(2).sum() + (priorLogits[:,0] - priorLogits[:,-1]).pow(2).sum())/GRID
-   regularizer3 = ((init_parameters["priorByCO"][:,1:] - init_parameters["priorByCO"][:,:-1]).pow(2).sum() + (init_parameters["priorByCO"][:,0] - init_parameters["priorByCO"][:,-1]).pow(2).sum())/GRID
+   regularizer3 = ((init_parameters["priorByCO"][:,:,1:] - init_parameters["priorByCO"][:,:,:-1]).pow(2).sum() + (init_parameters["priorByCO"][:,:,0] - init_parameters["priorByCO"][:,:,-1]).pow(2).sum())/GRID
    regularizer_total = regularizer1 + regularizer2 + regularizer3
 
 
 
    ELBO = loss # + regularizer4 + torch.nansum(logQPrior) #logQVolume.sum() + + regularizer3
-   print(f"Iteration: {iteration}, ELBO: {ELBO}, loss: {loss}") #, regularizer4: {regularizer4}, logQPrior: {torch.nansum(logQPrior)}") #, logQVolume.sum(), regularizer3,
+   print(f"Iteration: {iteration}, loss: {loss}") #, regularizer4: {regularizer4}, logQPrior: {torch.nansum(logQPrior)}") #, logQVolume.sum(), regularizer3,
    loss = ELBO
 
    loss = loss * (1/observations_y.size()[0])
@@ -509,6 +510,8 @@ def model(grid):
    #torch.nn.utils.clip_grad_norm_(init_parameters["sigma_logit"], max_norm=0.1, norm_type='inf') #clamp magnitude of the parameter updates   
    optim.step()
    if iteration % 10 == 0:
+     print(lossesBy500, noImprovement)
+     print(crossLossesBy500)
      print(iteration, loss, init_parameters["sigma_logit"], torch.sigmoid(init_parameters["mixture_logit"]), init_parameters["log_motor_var"])
    ELBOAverageOver500 = ELBOAverageOver500 + float(ELBO)/500
    lossAverageOver500 = lossAverageOver500 + float(loss)/500
@@ -521,22 +524,24 @@ def model(grid):
    #     loss_, bayesianEstimate, bayesianEstimate_sd, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][condition_], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, computePredictions=(iteration % 500 == 0), parameters=parameters, condition_=condition_, folds=testFolds, lossReduce='sum')
    #     crossValidLoss += loss_
 
+#   print(lossesBy500)
    if iteration % 500 == 0 and iteration > 0:
        lossesBy500.append(float(loss))
        crossLossesBy500.append(float(crossValidLoss))
        #with open(f"C:\\Users\\Tate\\Documents\\unifying-theory-biases-main\\code\\Reisenegger\\losses\\RunReisenegger_FreePrior_DifFreeResources_CosineLoss.py_0-0_9_10.0_360.txt", "w") as outFile: # for debugging
-       with open(f"losses/{__file__}_{P}-{P1}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt", "w") as outFile:
-           print(float(crossValidLoss), file=outFile)
-       #with open(f"C:\\Users\\Tate\\Documents\\unifying-theory-biases-main\\code\\Reisenegger\\logs\\RunReisenegger_FreePrior_DifFreeResources_CosineLoss.py_0-0_9_10.0_360.txt", "w") as outFile: # for debugging
-       with open(f"logs/CROSSVALID/{__file__}_{P}-{P1}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt", "w") as outFile:
-           print(float(loss), "CrossValid", float(crossValidLoss), "CrossValidLossesBy500", " ".join([str(q) for q in crossLossesBy500]), file=outFile)
-           print(iteration, "LossesBy500", " ".join([str(q) for q in lossesBy500]), file=outFile)
-           for z, y in init_parameters.items():
-               print(z, "\t", y.detach().cpu().numpy().tolist(), file=outFile)
-       if len(lossesBy500) > 1 and float(loss) >= lossesBy500[-2]-1e-5:
+       if crossLossesBy500[-1] <= min(crossLossesBy500):
+          with open(f"losses/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt", "w") as outFile:
+              print(float(crossValidLoss), file=outFile)
+          #with open(f"C:\\Users\\Tate\\Documents\\unifying-theory-biases-main\\code\\Reisenegger\\logs\\RunReisenegger_FreePrior_DifFreeResources_CosineLoss.py_0-0_9_10.0_360.txt", "w") as outFile: # for debugging
+          with open(f"logs/CROSSVALID/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt", "w") as outFile:
+              print(float(loss), "CrossValid", float(crossValidLoss), "CrossValidLossesBy500", " ".join([str(q) for q in crossLossesBy500]), file=outFile)
+              print(iteration, "LossesBy500", " ".join([str(q) for q in lossesBy500]), file=outFile)
+              for z, y in init_parameters.items():
+                  print(z, "\t", y.detach().cpu().numpy().tolist(), file=outFile)
+       if len(crossLossesBy500) > 1 and crossLossesBy500[-1] >= crossLossesBy500[-2]-1e-5:
          learning_rate *= 0.8
          optim = torch.optim.SGD([y for _, y in init_parameters.items()], lr=learning_rate)
-       if len(lossesBy500) > 1 and float(loss) >= min(lossesBy500[:-1])-1e-5:
+       if len(crossLossesBy500) > 1 and crossLossesBy500[-1] >= min(crossLossesBy500[:-1])-1e-5:
          noImprovement += 1
        else:
          noImprovement = 0
@@ -550,18 +555,18 @@ def model(grid):
 
 # Project the stimuli onto the discrete grid
 
-for P1 in [6]: #, 2, 4, 6, 8, 10]:
+for P1 in [P]: #, 2, 4, 6, 8, 10]:
 
   ##############################################
 # Initialize the model
 # Part: Initialize the model
   init_parameters = {}
-  init_parameters["log_motor_var"] = MakeFloatTensor(N_CO*[0])
+  init_parameters["log_motor_var"] = MakeZeros(N_CO, 2)
   init_parameters["sigma_logit"] = -1 + MakeZeros(N_CO, 2)
   init_parameters["mixture_logit"] = MakeFloatTensor(N_CO*[-1])
   init_parameters["prior"] = MakeZeros(GRID)
-  init_parameters["volume"] = MakeZeros(3,GRID) #Different for each condition
-  init_parameters["priorByCO"] = MakeZeros(N_CO,GRID)
+  init_parameters["volume"] = MakeZeros(N_CO,2,GRID) #Different for each condition
+  init_parameters["priorByCO"] = MakeZeros(N_CO,2,GRID)
  # for CO in range(3):
 #     init_parameters["priorByCO"][CO] = 0.5*(3*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]-180))
 
