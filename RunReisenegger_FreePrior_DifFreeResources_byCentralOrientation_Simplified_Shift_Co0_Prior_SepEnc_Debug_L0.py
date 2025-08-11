@@ -301,7 +301,7 @@ fourierMultiplier = MakeFloatTensor(list(range(1,FOURIER_BASIS_SIZE+1)) + list(r
 
 #print(fourierMultiplier)
 #print(trigonometric_basis.pow(2).sum(dim=1))
-if True:
+if False:
   figure, axis = plt.subplots(2*FOURIER_BASIS_SIZE, 1, figsize=(50, 50))
   for i in range(trigonometric_basis.size()[0]):
      axis[i].plot(grid.cpu(), trigonometric_basis[i].cpu())
