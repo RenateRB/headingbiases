@@ -1,0 +1,8 @@
+Primary scripts for fitting:
+
+egocentric:
+RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py
+
+allocentric:
+RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py
+
