@@ -274,9 +274,10 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
   ## If computePredictions==True, compute the bias and variability of the estimate
   if computePredictions:
-     bayesianEstimate_byStimulus = bayesianEstimate.unsqueeze(1)/INVERSE_DISTANCE_BETWEEN_NEIGHBORING_GRID_POINTS
-     bayesianEstimate_avg_byStimulus = computeCircularMeanWeighted(bayesianEstimate_byStimulus, likelihoods)
-     bayesianEstimate_sd_byStimulus = computeCircularSDWeighted(bayesianEstimate_byStimulus, likelihoods)
+     bayesianEstimate_byStimulus = bayesianEstimateSecond.unsqueeze(1)/INVERSE_DISTANCE_BETWEEN_NEIGHBORING_GRID_POINTS
+#     print(bayesianEstimateSecond.size(), bayesianEstimate.size(), overall_likelihood.size(), likelihoods.size())
+     bayesianEstimate_avg_byStimulus = computeCircularMeanWeighted(bayesianEstimate_byStimulus, likelihood_including_trafo)
+     bayesianEstimate_sd_byStimulus = computeCircularSDWeighted(bayesianEstimate_byStimulus, likelihood_including_trafo)
      bayesianEstimate_sd_byStimulus = torch.sqrt(bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * 3282.806)
      #bayesianEstimate_sd_byStimulus = (bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * math.pow(180/math.pi,2)).sqrt()
 
