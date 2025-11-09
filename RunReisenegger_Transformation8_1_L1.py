@@ -8,10 +8,8 @@ import numpy as np
 import random
 import sys
 import torch
-from cosineEstimator import CosineEstimator
-from cosineEstimator import CosineEstimator1
-#from mapCircularEstimator2 import MAPCircularEstimator
-#from mapCircularEstimator2 import MAPCircularEstimator1
+from torch.optim.lr_scheduler import ExponentialLR
+from l1Estimator import L1Estimator
 from loadReisenegger_P2 import *
 from matplotlib import rc
 from util import MakeFloatTensor
@@ -34,7 +32,7 @@ rc('font', **{'family':'Arial'})
 OPTIMIZER_VERBOSE = False
 
 P = int(sys.argv[1])
-#assert P > 0
+assert P == 1
 FOLD_HERE = int(sys.argv[2])
 REG_WEIGHT = float(sys.argv[3])
 GRID = int(sys.argv[4])
@@ -139,6 +137,13 @@ def SQUARED_SENSORY_SIMILARITY(x):
 def SQUARED_SENSORY_DIFFERENCE(x):
     return torch.sin(x)
 
+#############################################################
+# Part: Configure the appropriate estimator for minimizing the loss function
+assert P == 1
+
+# Part: Import/define the appropriate estimator for minimizing the loss function
+L1Estimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE)
+
 
 def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, showLikelihood=False, grid=grid, responses_=None, parameters=None, computePredictions=False, subject=None, centralOrientation=None, sigma_stimulus=None, sigma2_stimulus=0, condition_=None, folds=None, lossReduce='mean'):
  #print(f"Current CO: {COs[centralOrientation]}")
@@ -194,18 +199,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   #    print(f"NaNs in posterior in line 165.")
 
   ## Compute the estimator for each m in the discretized sensory space.
-  # bayesianEstimate = LPEstimator.apply(grid_indices_here, posterior)
-  if condition_ == 0:
-    #if P == 0:
-    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
-    #elif P>0:
-    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
-      
-  elif condition_ == 1:
-    #if P1 == 0:
-    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
-    #elif P1>0:
-    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
+  bayesianEstimate = L1Estimator.apply(grid_indices_here, posterior)
 
   # now we a round of mapping
   sigma2_t = 10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
@@ -231,7 +225,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   # if torch.isnan(posterior).any():
   #    print(f"NaNs in posterior in line 165.")
 
-  bayesianEstimateSecond = CosineEstimator1.apply(grid_indices_here, posterior_second)
+  bayesianEstimateSecond = L1Estimator.apply(grid_indices_here, posterior_second)
 #  print(bayesianEstimateSecond, "hatTheta")
 
   ## Compute the motor likelihood
@@ -590,7 +584,7 @@ def model(grid):
                   print(z, "\t", y.detach().cpu().numpy().tolist(), file=outFile)
        if len(crossLossesBy500) > 1 and crossLossesBy500[-1] >= crossLossesBy500[-2]-1e-5:
          learning_rate *= 0.8
-         optim = torch.optim.SGD([y for _, y in init_parameters.items()], lr=learning_rate, momentum=0.1)
+         optim = torch.optim.SGD([y for _, y in init_parameters.items()], lr=learning_rate)
        if len(crossLossesBy500) > 1 and crossLossesBy500[-1] >= min(crossLossesBy500[:-1])-1e-5:
          noImprovement += 1
        else:
@@ -631,7 +625,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   #init_parameters["SIGMA_volumeBySubject"] = MakeZeros(2,N_SUBJECTS,2*FOURIER_BASIS_SIZE) #Different for each condition
 
   from util import loadParameters
-  loadParameters(init_parameters, "logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt")
+  loadParameters(init_parameters, "logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_L1.py_1_0_10.0_180.txt")
   init_parameters["volume"][:,1] = init_parameters["volume"][:,0]
   init_parameters["priorByCO"][:,1] = init_parameters["priorByCO"][:,0]
  # print(init_parameters["volume"])
@@ -643,7 +637,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
 # Initialize optimizer.
 # The learning rate is a user-specified parameter.
   learning_rate = 0.1
-  optim = torch.optim.SGD([y for _, y in init_parameters.items()], lr=learning_rate, momentum=0.1)
+  optim = torch.optim.SGD([y for _, y in init_parameters.items()], lr=learning_rate)
 
   ##############################################
   #assert P >= 2
@@ -657,7 +651,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
     #MAPCircularEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, KERNEL_WIDTH=KERNEL_WIDTH, SCALE=SCALE, MIN_GRID=MIN_GRID, MAX_GRID=MAX_GRID)
   
   #elif P>0:
-  CosineEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P=P, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
+  #CosineEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P=P, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
 #LPEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P=P, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
    
   #For condition 1
@@ -666,6 +660,6 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   #  MAPCircularEstimator1.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, KERNEL_WIDTH=KERNEL_WIDTH, SCALE=SCALE, MIN_GRID=MIN_GRID, MAX_GRID=MAX_GRID)
   
   #elif P1>0:
-  CosineEstimator1.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P1=P1, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
+ # CosineEstimator1.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P1=P1, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
   
   model(grid)

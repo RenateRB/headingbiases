@@ -195,24 +195,24 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
   ## Compute the estimator for each m in the discretized sensory space.
   # bayesianEstimate = LPEstimator.apply(grid_indices_here, posterior)
-  if condition_ == 0:
-    #if P == 0:
-    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
-    #elif P>0:
-    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
-      
-  elif condition_ == 1:
-    #if P1 == 0:
-    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
-    #elif P1>0:
-    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
+#  if condition_ == 0:
+#    #if P == 0:
+#    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
+#    #elif P>0:
+#    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
+#      
+#  elif condition_ == 1:
+#    #if P1 == 0:
+#    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
+#    #elif P1>0:
+#    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
 
   # now we a round of mapping
   sigma2_t = 10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
  #  print(f"sigma2: {sigma2}")
   # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
 
-  mapping_likelihoods = torch.softmax(-(360/GRID*bayesianEstimate.unsqueeze(0) - grid.unsqueeze(1)).pow(2) / (sigma2_t), dim=0)
+  mapping_likelihoods = torch.softmax(-(grid.unsqueeze(0) - grid.unsqueeze(1)).pow(2) / (sigma2_t), dim=0)
 #  print(mapping_likelihoods)
   # now a second transfer
   sigma2_t2 = 2*torch.sigmoid(init_parameters["sigma2_t2"]) #maybe change 2 for 4?
