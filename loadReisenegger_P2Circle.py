@@ -8,8 +8,8 @@ from util import MakeLongTensor
 
 from util import ToDevice
 
-files = sorted(glob.glob("data/*_nocircle.mat"))
-# Phase 2, without the allocentric circle
+files = sorted(glob.glob("data/*P2.mat"))
+# Phase 2
 
 from scipy.io import loadmat
 
@@ -50,4 +50,20 @@ observations_y = response
 
 
 sample=target
+
+MASK = (condition == 1) # subset to the circle files
+# note that coding differs from the P2_nocircle files
+
+Subject = Subject[MASK]
+centralOrientationPerTrial = centralOrientationPerTrial[MASK]
+condition = condition[MASK]
+response = response[MASK]
+target = target[MASK]
+#subject = subject[MASK]
+sample = sample[MASK]
+observations_x = observations_x[MASK]
+observations_y = observations_y[MASK]
+
+
+#condition = 1
 

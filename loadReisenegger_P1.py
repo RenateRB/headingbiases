@@ -8,8 +8,10 @@ from util import MakeLongTensor
 
 from util import ToDevice
 
-files = sorted(glob.glob("data/*_nocircle.mat"))
-# Phase 2, without the allocentric circle
+files = sorted(glob.glob("data/*P1.mat"))
+# ego=0
+# allo circle=1
+ 
 
 from scipy.io import loadmat
 
