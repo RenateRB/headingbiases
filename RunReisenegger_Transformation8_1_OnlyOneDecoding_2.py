@@ -195,24 +195,24 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
   ## Compute the estimator for each m in the discretized sensory space.
   # bayesianEstimate = LPEstimator.apply(grid_indices_here, posterior)
-  if condition_ == 0:
-    #if P == 0:
-    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
-    #elif P>0:
-    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
-      
-  elif condition_ == 1:
-    #if P1 == 0:
-    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
-    #elif P1>0:
-    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
+#  if condition_ == 0:
+#    #if P == 0:
+#    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
+#    #elif P>0:
+#    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
+#      
+#  elif condition_ == 1:
+#    #if P1 == 0:
+#    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
+#    #elif P1>0:
+#    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
 
   # now we a round of mapping
   sigma2_t = 10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
  #  print(f"sigma2: {sigma2}")
   # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
 
-  mapping_likelihoods = torch.softmax(-(360/GRID*bayesianEstimate.unsqueeze(0) - grid.unsqueeze(1)).pow(2) / (sigma2_t), dim=0)
+#  mapping_likelihoods = torch.softmax(-(grid.unsqueeze(0) - grid.unsqueeze(1)).pow(2) / (sigma2_t), dim=0)
 #  print(mapping_likelihoods)
   # now a second transfer
   sigma2_t2 = 2*torch.sigmoid(init_parameters["sigma2_t2"]) #maybe change 2 for 4?
@@ -220,7 +220,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   transfer_likelihoods = torch.softmax(-(F_t[:-1].unsqueeze(0) - F_t[:-1].unsqueeze(1)).pow(2) / (sigma2_t2), dim=0)
   print("f_t", torch.softmax(init_parameters["f_t"], dim=0))
 
-  likelihood_including_trafo = torch.matmul(transfer_likelihoods, torch.matmul(mapping_likelihoods, likelihoods))
+  likelihood_including_trafo = torch.matmul(transfer_likelihoods,  likelihoods)
 
 
   ## Compute posterior using Bayes' rule. As described in the paper, the posterior is computed
@@ -400,8 +400,8 @@ def model(grid):
    ## In this dataset, all parameters are fitted across subjects.
    for CONDITION in [1]:
     for CO in range(N_CO):
-     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION],dim=0) #.detach()
-     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0) #.detach()
+     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION],dim=0).detach()
+     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0).detach()
      ## Run the model at its current parameter values.
      loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
@@ -526,7 +526,7 @@ def model(grid):
    regularizer3 = ((init_parameters["priorByCO"][:,:,1:] - init_parameters["priorByCO"][:,:,:-1]).pow(2).sum() + (init_parameters["priorByCO"][:,:,0] - init_parameters["priorByCO"][:,:,-1]).pow(2).sum())/GRID
    regularizer4 = ((init_parameters["f_t"][1:] - init_parameters["f_t"][:-1]).pow(2).sum() + (init_parameters["f_t"][0] - init_parameters["f_t"][-1]).pow(2).sum())/GRID
  #  regularizer_total = regularizer1 + regularizer2 + regularizer3 + 
-   regularizer_total = regularizer1 + regularizer3 + regularizer4
+   regularizer_total = regularizer3 + regularizer4
 
 
 

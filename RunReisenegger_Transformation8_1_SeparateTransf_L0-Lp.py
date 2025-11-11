@@ -10,8 +10,7 @@ import sys
 import torch
 from cosineEstimator import CosineEstimator
 from cosineEstimator import CosineEstimator1
-#from mapCircularEstimator2 import MAPCircularEstimator
-#from mapCircularEstimator2 import MAPCircularEstimator1
+from mapCircularEstimatorDebug import MAPCircularEstimator
 from loadReisenegger_P2 import *
 from matplotlib import rc
 from util import MakeFloatTensor
@@ -33,8 +32,10 @@ rc('font', **{'family':'Arial'})
 
 OPTIMIZER_VERBOSE = False
 
-P = int(sys.argv[1])
-#assert P > 0
+P_perc, P_trans = map(int, sys.argv[1].split("-"))
+assert P_perc == 0
+assert P_trans > 1
+P_joint = sys.argv[1]
 FOLD_HERE = int(sys.argv[2])
 REG_WEIGHT = float(sys.argv[3])
 GRID = int(sys.argv[4])
@@ -44,7 +45,7 @@ DEVICE = 'cuda'
 
 FOURIER_BASIS_SIZE = 50 #int(sys.argv[5])
 assert FOURIER_BASIS_SIZE in [30, 50, 80]
-#FILE = f"logs/CROSSVALID/{__file__.replace('_VIZ', '')}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt" #'C:\\Users\\Tate\\Documents\\unifying-theory-biases-main\\code\\Reisenegger\\logs\\CROSSVALID\\RunReisenegger_FreePrior_DifFreeResources.py_2_0_10.0_180.txt'
+#FILE = f"logs/CROSSVALID/{__file__.replace('_VIZ', '')}_{P_joint}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt" #'C:\\Users\\Tate\\Documents\\unifying-theory-biases-main\\code\\Reisenegger\\logs\\CROSSVALID\\RunReisenegger_FreePrior_DifFreeResources.py_2_0_10.0_180.txt'
 
 # Helper Functions dependent on the device
 
@@ -139,6 +140,16 @@ def SQUARED_SENSORY_SIMILARITY(x):
 def SQUARED_SENSORY_DIFFERENCE(x):
     return torch.sin(x)
 
+#############################################################
+# Part: Configure the appropriate estimator for minimizing the loss function
+assert P_perc == 0
+assert P_trans > 1
+
+
+
+assert P_perc == 0
+MAPCircularEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, KERNEL_WIDTH=0.1, MIN_GRID=MIN_GRID, MAX_GRID=MAX_GRID)
+
 
 def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, showLikelihood=False, grid=grid, responses_=None, parameters=None, computePredictions=False, subject=None, centralOrientation=None, sigma_stimulus=None, sigma2_stimulus=0, condition_=None, folds=None, lossReduce='mean'):
  #print(f"Current CO: {COs[centralOrientation]}")
@@ -194,18 +205,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   #    print(f"NaNs in posterior in line 165.")
 
   ## Compute the estimator for each m in the discretized sensory space.
-  # bayesianEstimate = LPEstimator.apply(grid_indices_here, posterior)
-  if condition_ == 0:
-    #if P == 0:
-    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
-    #elif P>0:
-    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
-      
-  elif condition_ == 1:
-    #if P1 == 0:
-    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
-    #elif P1>0:
-    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
+  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
 
   # now we a round of mapping
   sigma2_t = 10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
@@ -216,9 +216,9 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 #  print(mapping_likelihoods)
   # now a second transfer
   sigma2_t2 = 2*torch.sigmoid(init_parameters["sigma2_t2"]) #maybe change 2 for 4?
-  F_t = torch.cat([MakeZeros(1), torch.cumsum(torch.softmax(init_parameters["f_t"], dim=0), dim=0)], dim=0)
+  F_t = torch.cat([MakeZeros(1), torch.cumsum(torch.softmax(init_parameters["f_t"][centralOrientation], dim=0), dim=0)], dim=0)
   transfer_likelihoods = torch.softmax(-(F_t[:-1].unsqueeze(0) - F_t[:-1].unsqueeze(1)).pow(2) / (sigma2_t2), dim=0)
-  print("f_t", torch.softmax(init_parameters["f_t"], dim=0))
+#  print("f_t", torch.softmax(init_parameters["f_t"], dim=0))
 
   likelihood_including_trafo = torch.matmul(transfer_likelihoods, torch.matmul(mapping_likelihoods, likelihoods))
 
@@ -400,8 +400,8 @@ def model(grid):
    ## In this dataset, all parameters are fitted across subjects.
    for CONDITION in [1]:
     for CO in range(N_CO):
-     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION],dim=0) #.detach()
-     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0) #.detach()
+     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION],dim=0).detach()
+     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0).detach()
      ## Run the model at its current parameter values.
      loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
@@ -448,9 +448,10 @@ def model(grid):
        axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
        axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
 
-       axis[3,0].scatter(grid.cpu(), torch.softmax(init_parameters["f_t"], dim=0).detach().cpu())
+       
+       axis[3,0].scatter(grid.cpu(), torch.softmax(init_parameters["f_t"][CO], dim=0).detach().cpu())
 #       axis[3,0].
-       print("f_t for plot", torch.softmax(init_parameters["f_t"], dim=0))
+       print("f_t for plot", torch.softmax(init_parameters["f_t"][CO], dim=0))
        #if iteration > 1:
          #quit()
        #axis[CO,3].scatter(grid_centered.cpu(), (bayesianEstimate_sd_byStimulus_model).detach().cpu())
@@ -502,7 +503,7 @@ def model(grid):
 
      print("Saving plot...")
 
-     savePlot(f"figures/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}_{FOURIER_BASIS_SIZE}.pdf")
+     savePlot(f"figures/{__file__}_{P_joint}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}_{FOURIER_BASIS_SIZE}.pdf")
      plt.close()
 
      crossValidLoss = 0
@@ -524,9 +525,9 @@ def model(grid):
    priorLogits = init_parameters["prior"].unsqueeze(0)
    regularizer2 = ((priorLogits[:,1:] - priorLogits[:,:-1]).pow(2).sum() + (priorLogits[:,0] - priorLogits[:,-1]).pow(2).sum())/GRID
    regularizer3 = ((init_parameters["priorByCO"][:,:,1:] - init_parameters["priorByCO"][:,:,:-1]).pow(2).sum() + (init_parameters["priorByCO"][:,:,0] - init_parameters["priorByCO"][:,:,-1]).pow(2).sum())/GRID
-   regularizer4 = ((init_parameters["f_t"][1:] - init_parameters["f_t"][:-1]).pow(2).sum() + (init_parameters["f_t"][0] - init_parameters["f_t"][-1]).pow(2).sum())/GRID
+   regularizer4 = ((init_parameters["f_t"][:,1:] - init_parameters["f_t"][:,:-1]).pow(2).sum() + (init_parameters["f_t"][:,0] - init_parameters["f_t"][:,-1]).pow(2).sum())/GRID
  #  regularizer_total = regularizer1 + regularizer2 + regularizer3 + 
-   regularizer_total = regularizer1 + regularizer3 + regularizer4
+   regularizer_total = regularizer4
 
 
 
@@ -580,10 +581,10 @@ def model(grid):
        crossLossesBy500.append(float(crossValidLoss))
        #with open(f"C:\\Users\\Tate\\Documents\\unifying-theory-biases-main\\code\\Reisenegger\\losses\\RunReisenegger_FreePrior_DifFreeResources_CosineLoss.py_0-0_9_10.0_360.txt", "w") as outFile: # for debugging
        if crossLossesBy500[-1] <= min(crossLossesBy500):
-          with open(f"losses/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt", "w") as outFile:
+          with open(f"losses/{__file__}_{P_joint}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt", "w") as outFile:
               print(float(crossValidLoss), file=outFile)
           #with open(f"C:\\Users\\Tate\\Documents\\unifying-theory-biases-main\\code\\Reisenegger\\logs\\RunReisenegger_FreePrior_DifFreeResources_CosineLoss.py_0-0_9_10.0_360.txt", "w") as outFile: # for debugging
-          with open(f"logs/CROSSVALID/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt", "w") as outFile:
+          with open(f"logs/CROSSVALID/{__file__}_{P_joint}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}.txt", "w") as outFile:
               print(float(loss), "CrossValid", float(crossValidLoss), "CrossValidLossesBy500", " ".join([str(q) for q in crossLossesBy500]), file=outFile)
               print(iteration, "LossesBy500", " ".join([str(q) for q in lossesBy500]), file=outFile)
               for z, y in init_parameters.items():
@@ -605,7 +606,7 @@ def model(grid):
 
 # Project the stimuli onto the discrete grid
 
-for P1 in [P]: #, 2, 4, 6, 8, 10]:
+for P1 in [P_perc]: #, 2, 4, 6, 8, 10]:
 
   ##############################################
 # Initialize the model
@@ -614,7 +615,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   init_parameters["log_motor_var"] = MakeZeros(N_CO, 2)
   init_parameters["sigma_logit"] = -1 + MakeZeros(N_CO, 2)
   init_parameters["mixture_logit"] = MakeFloatTensor(N_CO*[-1])
-  init_parameters["f_t"] = MakeZeros(GRID)
+  init_parameters["f_t"] = MakeZeros(3,GRID)
   init_parameters["sigma2_t"] = MakeZeros(1)
   init_parameters["sigma2_t2"] = MakeZeros(1)
   init_parameters["prior"] = MakeZeros(GRID)
@@ -631,7 +632,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   #init_parameters["SIGMA_volumeBySubject"] = MakeZeros(2,N_SUBJECTS,2*FOURIER_BASIS_SIZE) #Different for each condition
 
   from util import loadParameters
-  loadParameters(init_parameters, "logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt")
+  loadParameters(init_parameters, f"logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_L0.py_{P_perc}_0_10.0_180.txt")
   init_parameters["volume"][:,1] = init_parameters["volume"][:,0]
   init_parameters["priorByCO"][:,1] = init_parameters["priorByCO"][:,0]
  # print(init_parameters["volume"])
@@ -657,7 +658,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
     #MAPCircularEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, KERNEL_WIDTH=KERNEL_WIDTH, SCALE=SCALE, MIN_GRID=MIN_GRID, MAX_GRID=MAX_GRID)
   
   #elif P>0:
-  CosineEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P=P, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
+  CosineEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P=P_trans, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
 #LPEstimator.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P=P, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
    
   #For condition 1
@@ -666,6 +667,6 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   #  MAPCircularEstimator1.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, KERNEL_WIDTH=KERNEL_WIDTH, SCALE=SCALE, MIN_GRID=MIN_GRID, MAX_GRID=MAX_GRID)
   
   #elif P1>0:
-  CosineEstimator1.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P1=P1, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
+  CosineEstimator1.set_parameters(GRID=GRID, OPTIMIZER_VERBOSE=OPTIMIZER_VERBOSE, P1=P_trans, SQUARED_SENSORY_DIFFERENCE=SQUARED_SENSORY_DIFFERENCE, SQUARED_SENSORY_SIMILARITY=SQUARED_SENSORY_SIMILARITY, SCALE=SCALE)
   
   model(grid)
