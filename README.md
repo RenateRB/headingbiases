@@ -17,6 +17,8 @@ PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrie
 
 Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt)
 
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt)
+
 #### Fit across exponents
 
 Command:
@@ -42,6 +44,7 @@ PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrie
 
 Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_10.0_180.txt)
 
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_10.0_180.txt)
 
 #### Fit across exponents
 
@@ -63,6 +66,8 @@ PDF link: [here](figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.pdf)
 
 Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt)
 
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt)
+
 #### Fit across exponents
 
 TODO
@@ -83,6 +88,7 @@ PDF link: [here](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0
 
 Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt)
 
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt)
 
 #### Fit across exponents
 
