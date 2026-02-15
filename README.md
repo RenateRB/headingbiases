@@ -43,7 +43,9 @@ Command:
 
     python3 RunReisenegger_Transformation8_1.py 2 0 1.0 180 50
 
-Fit: [figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.pdf](plot)
+Fit: ![Fit](figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.png)
+
+PDF link: [here](figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.pdf)
 
 Goodness of fit: [losses/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt](file)
 
@@ -55,7 +57,9 @@ Command:
 
     python3 RunReisenegger_Transformation8_1_OnlyOneDecoding.py 2 0 1.0 180 50
 
-Fit: [figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180_50.pdf](plot)
+Fit: ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180_50.png)
+
+PDF link: [here](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180_50.pdf)
 
 Goodness of fit: [losses/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt](file)
 
