@@ -15,7 +15,7 @@ Fit: ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientati
 PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180_50.pdf)
 
 
-Goodness of fit: [losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt](file)
+Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt)
 
 #### Fit across exponents
 
@@ -40,7 +40,7 @@ Fit: ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientati
 PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_10.0_180_50.pdf)
 
 
-Goodness of fit: [losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_10.0_180.txt](file)
+Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_10.0_180.txt)
 
 
 #### Fit across exponents
@@ -61,7 +61,7 @@ Fit: ![Fit](figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.png)
 
 PDF link: [here](figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.pdf)
 
-Goodness of fit: [losses/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt](file)
+Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt)
 
 #### Fit across exponents
 
@@ -80,11 +80,13 @@ Fit: ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_
 
 PDF link: [here](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180_50.pdf)
 
+
+Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt)
+
+
 #### Fit across exponents
 
 TODO
 
-
-Goodness of fit: [losses/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt](file)
 
 
