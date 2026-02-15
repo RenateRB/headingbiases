@@ -17,6 +17,15 @@ PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrie
 
 Goodness of fit: [losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt](file)
 
+#### Fit across exponents
+
+Command:
+
+    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_L0.py 0 0 10.0 180 50
+    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_L1.py 1 0 10.0 180 50
+    for i in 2 4 6 8 ; do python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py $i 0 10.0 180 50 ; done
+
+Resulting goodness of fit: TODO plot PNG
 
 ## Fit on Allocentric Condition
 
@@ -32,6 +41,11 @@ PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrie
 
 
 Goodness of fit: [losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_10.0_180.txt](file)
+
+
+#### Fit across exponents
+
+TODO
 
 ### Transformation after decoding
 
@@ -49,6 +63,11 @@ PDF link: [here](figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.pdf)
 
 Goodness of fit: [losses/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt](file)
 
+#### Fit across exponents
+
+TODO
+
+
 ### Transformation without decoding
 
 Freeze encoding and prior based on the egocentric condition
@@ -60,6 +79,11 @@ Command:
 Fit: ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180_50.png)
 
 PDF link: [here](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180_50.pdf)
+
+#### Fit across exponents
+
+TODO
+
 
 Goodness of fit: [losses/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt](file)
 
