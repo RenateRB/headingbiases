@@ -184,6 +184,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
     ## code block will not be used.
     assert False
     likelihoods = torch.matmul(sensory_likelihoods, stimulus_likelihoods)
+#  assert likelihoods.log().abs().max() < 1e10, sensory_likelihoods
 
   ## Compute posterior using Bayes' rule. As described in the paper, the posterior is computed
   ## in the discretized stimulus space.
@@ -255,6 +256,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   ## The log motor likelihoods, for each pair of sensory encoding m and observed human response
   log_motor_likelihoods = (error/motor_variance) - log_normalizing_constant
   ## Obtaining the motor likelihood by exponentiating.
+  assert motor_variance > 0, motor_variance
   motor_likelihoods = torch.exp(log_motor_likelihoods)
   ## Obtain the guessing rate, parameterized via the (inverse) logit transform as described in SI Appendix
   # Mixture of estimation and uniform response
@@ -262,6 +264,10 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   ## The full likelihood then consists of a mixture of the motor likelihood calculated before, and the uniform
   ## distribution on the full space.
  # motor_likelihoods = (1-uniform_part) * motor_likelihoods + (uniform_part / (2*math.pi) + 0*motor_likelihoods)
+#  assert motor_likelihoods.log().abs().max() < 1e20, (motor_variance, log_motor_likelihoods.max(), log_motor_likelihoods.min())
+  # I want to know which indices have zeros
+  print((motor_likelihoods == 0).nonzero())
+  print(motor_likelihoods[0,2])
 
   
   if condition_ == 1:
@@ -279,9 +285,11 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
     if condition_ == 0:
       loss = -torch.gather(input=torch.matmul(motor_likelihoods, likelihoods),dim=1,index=stimulus.unsqueeze(1)).squeeze(1).log().sum()
     else:
+#      assert overall_likelihood.log().abs().max() < 1e10, motor_likelihoods.log().abs().max()
       loss = -torch.gather(input=overall_likelihood,dim=1,index=stimulus.unsqueeze(1)).squeeze(1).log().sum()
   else:
     assert False
+  #assert likelihoods.log().abs().max() < 1e10, likelihoods.log().abs().max()
 
   ## If computePredictions==True, compute the bias and variability of the estimate
   if computePredictions:
@@ -550,6 +558,8 @@ def model(grid):
 
    loss = loss * (1/observations_y.size()[0])
    loss = loss + REG_WEIGHT * regularizer_total.sum()
+
+   #assert abs(loss) < 1e10, ELBO
 
    optim.zero_grad()
    loss.backward() #retain_graph=True)

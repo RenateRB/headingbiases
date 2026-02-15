@@ -221,7 +221,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
      transfer_likelihoods = torch.softmax(-(F_t[:-1].unsqueeze(0) - F_t[:-1].unsqueeze(1)).pow(2) / (sigma2_t2), dim=0)
      print("f_t", torch.softmax(init_parameters["f_t"], dim=0))
    
-     likelihood_including_trafo = torch.matmul(transfer_likelihoods, torch.matmul(mapping_likelihoods, likelihoods))
+     likelihood_including_trafo = torch.matmul(transfer_likelihoods, likelihoods)
    
    
      ## Compute posterior using Bayes' rule. As described in the paper, the posterior is computed
@@ -415,7 +415,7 @@ def model(grid):
    ## In this dataset, all parameters are fitted across subjects.
    for CONDITION in [0,1]:
     for CO in range(N_CO):
-     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][0,0],dim=0)
+     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,0],dim=0)
      prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,0], dim=0)
      ## Run the model at its current parameter values.
      loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
@@ -527,7 +527,7 @@ def model(grid):
       if not torch.any(condition == CONDITION):
           continue
       for CO in range(N_CO):
-       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][0,0], dim=0)
+       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,0], dim=0)
        prior = torch.nn.functional.softmax(parameters["prior"] + init_parameters["priorByCO"][CO,0], dim=0)
        #shift_by = GRID-int((grid-COs[CO]).abs().argmin())
        print(f"COs[CO]: {COs[CO]}")

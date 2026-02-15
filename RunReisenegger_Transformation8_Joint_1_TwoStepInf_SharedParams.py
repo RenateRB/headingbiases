@@ -184,6 +184,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
     ## code block will not be used.
     assert False
     likelihoods = torch.matmul(sensory_likelihoods, stimulus_likelihoods)
+#  assert likelihoods.log().abs().max() < 1e10, sensory_likelihoods
 
   ## Compute posterior using Bayes' rule. As described in the paper, the posterior is computed
   ## in the discretized stimulus space.
@@ -226,7 +227,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
    
      ## Compute posterior using Bayes' rule. As described in the paper, the posterior is computed
      ## in the discretized stimulus space.
-     posterior_second = prior.unsqueeze(1) * likelihood_including_trafo.t()
+     posterior_second = prior.unsqueeze(1) * transfer_likelihoods.t()
    
      posterior_second = posterior_second / posterior_second.sum(dim=0, keepdim=True)
      # if torch.isnan(posterior).any():
@@ -255,6 +256,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   ## The log motor likelihoods, for each pair of sensory encoding m and observed human response
   log_motor_likelihoods = (error/motor_variance) - log_normalizing_constant
   ## Obtaining the motor likelihood by exponentiating.
+  assert motor_variance > 0, motor_variance
   motor_likelihoods = torch.exp(log_motor_likelihoods)
   ## Obtain the guessing rate, parameterized via the (inverse) logit transform as described in SI Appendix
   # Mixture of estimation and uniform response
@@ -280,9 +282,12 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
     if condition_ == 0:
       loss = -torch.gather(input=torch.matmul(motor_likelihoods, likelihoods),dim=1,index=stimulus.unsqueeze(1)).squeeze(1).log().sum()
     else:
+      assert overall_likelihood.log().abs().max() < 1e10, motor_likelihoods.log().abs().max()
       loss = -torch.gather(input=overall_likelihood,dim=1,index=stimulus.unsqueeze(1)).squeeze(1).log().sum()
   else:
     assert False
+  #assert likelihoods.log().abs().max() < 1e10, likelihoods.log().abs().max()
+  assert motor_likelihoods.log().abs().max() < 1e10, motor_likelihoods.log().abs().max()
 
   ## If computePredictions==True, compute the bias and variability of the estimate
   if computePredictions:
@@ -415,7 +420,7 @@ def model(grid):
    ## In this dataset, all parameters are fitted across subjects.
    for CONDITION in [0,1]:
     for CO in range(N_CO):
-     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][0,0],dim=0)
+     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,0],dim=0)
      prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,0], dim=0)
      ## Run the model at its current parameter values.
      loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
@@ -527,7 +532,7 @@ def model(grid):
       if not torch.any(condition == CONDITION):
           continue
       for CO in range(N_CO):
-       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][0,0], dim=0)
+       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,0], dim=0)
        prior = torch.nn.functional.softmax(parameters["prior"] + init_parameters["priorByCO"][CO,0], dim=0)
        #shift_by = GRID-int((grid-COs[CO]).abs().argmin())
        print(f"COs[CO]: {COs[CO]}")
@@ -551,6 +556,8 @@ def model(grid):
 
    loss = loss * (1/observations_y.size()[0])
    loss = loss + REG_WEIGHT * regularizer_total.sum()
+
+   assert abs(loss) < 1e10, ELBO
 
    optim.zero_grad()
    loss.backward() #retain_graph=True)
