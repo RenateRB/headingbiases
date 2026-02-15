@@ -8,6 +8,21 @@ if DEVICE not in ["cuda", "cpu"]:
    print("Not using GPU.")
 SHOW_PLOT = False
 
+def savePlotPDFAndPNG(*args, **kwargs):
+    if "transparent" not in kwargs:
+      kwargs["transparent"] = True
+#    kwargs["optimize"]=True
+    args = list(args)
+    args[0] = args[0]+".pdf"
+    plt.savefig(*args, **kwargs, bbox_inches='tight') 
+    args[0] = args[0].replace(".pdf", ".png")
+    plt.savefig(*args, **kwargs, bbox_inches='tight') 
+    if SHOW_PLOT:
+       plt.show()
+    plt.close()
+
+
+
 def savePlot(*args, **kwargs):
     if "transparent" not in kwargs:
       kwargs["transparent"] = True

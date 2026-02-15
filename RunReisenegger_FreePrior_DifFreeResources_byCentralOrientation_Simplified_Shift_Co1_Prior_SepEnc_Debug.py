@@ -11,6 +11,7 @@ from cosineEstimator import CosineEstimator1
 #from mapCircularEstimator2 import MAPCircularEstimator1
 from loadReisenegger_P2 import *
 from matplotlib import rc
+from util import savePlotPDFAndPNG
 from util import MakeFloatTensor
 from util import MakeLongTensor
 from util import MakeZeros
@@ -454,7 +455,7 @@ def model(grid):
 
      print("Saving plot...")
 
-     savePlot(f"figures/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}_{FOURIER_BASIS_SIZE}.pdf")
+     savePlotPDFAndPNG(f"figures/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}_{FOURIER_BASIS_SIZE}")
      plt.close()
 
      crossValidLoss = 0
