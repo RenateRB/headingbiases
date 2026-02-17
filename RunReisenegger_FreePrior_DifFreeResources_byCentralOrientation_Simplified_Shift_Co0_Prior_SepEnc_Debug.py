@@ -28,6 +28,7 @@ from util import toFactor
 
 __file__ = __file__.split("/")[-1]
 rc('font', **{'family':'Arial'})
+plt.rcParams.update({'font.size': 14})
 
 OPTIMIZER_VERBOSE = False
 
