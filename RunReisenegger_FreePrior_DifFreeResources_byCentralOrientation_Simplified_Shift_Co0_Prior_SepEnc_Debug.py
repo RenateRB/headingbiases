@@ -411,10 +411,12 @@ def model(grid):
  #      axis[CO,1].plot(grid_centered[180:].cpu(), priorExpected[180:].detach().cpu())
        axis[CO,1].plot(grid_centered.cpu(), priorExpected.detach().cpu(), color="gray")
        axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu(), color=COLORS[CO][CONDITION])
-       axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0],color="gray")
+       axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0], color="gray")
        #axis[CO,2].scatter(grid_centered.cpu(), (bayesianEstimate_model-grid).detach().cpu())
        axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
        axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
+       axis[N_CO,2+CONDITION].set_xticks(np.arange(90, 271, 45))
+       axis[N_CO,2+CONDITION].set_xticklabels(np.arange(-90, 91, 45))
 
        #axis[CO,3].scatter(grid_centered.cpu(), (bayesianEstimate_sd_byStimulus_model).detach().cpu())
        axis[CO,3].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_sd_byStimulus_model)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
@@ -442,6 +444,8 @@ def model(grid):
           axis[CO][w].set_ylim(-80, 80)
        axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK], color=COLORS[CO][CONDITION])
        axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
+       axis[N_CO][6+CONDITION].set_xticks(np.arange(90, 271, 45))
+       axis[N_CO][6+CONDITION].set_xticklabels(np.arange(-90, 91, 45))
        for w in [2,3,4,5,6,7]:
           axis[N_CO][w].set_ylim(-80, 80)
 
