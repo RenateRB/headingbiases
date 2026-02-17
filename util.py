@@ -17,8 +17,8 @@ def savePlotPDFAndPNG(*args, **kwargs):
     plt.savefig(*args, **kwargs, bbox_inches='tight') 
     args[0] = args[0].replace(".pdf", ".png")
     plt.savefig(*args, **kwargs, bbox_inches='tight') 
-    args[0] = args[0].replace(".png", ".svg")
-    plt.savefig(*args, **kwargs, bbox_inches='tight') 
+    #args[0] = args[0].replace(".png", ".svg")
+    #plt.savefig(*args, **kwargs, bbox_inches='tight') 
     if SHOW_PLOT:
        plt.show()
     plt.close()
