@@ -31,6 +31,7 @@ from util import toFactor
 
 __file__ = __file__.split("/")[-1]
 rc('font', **{'family':'Arial'})
+plt.rcParams.update({'font.size': 14})
 
 OPTIMIZER_VERBOSE = False
 
@@ -75,6 +76,16 @@ N_SUBJECTS = int(max(Subject))+1
 COs = torch.unique(centralOrientationPerTrial)
 CO_size = COs.size()
 N_CO = CO_size[0]
+
+# Colors by CO and condition
+COLORS = [[None for _ in range(2)] for _ in range(3)]
+COLORS[0][0] = "#ff0000"
+COLORS[1][0] = "#88000a"
+COLORS[2][0] = "#ff9696"
+COLORS[0][1] = "#801aff"
+COLORS[1][1] = "#4d0f99"
+COLORS[2][1] = "#c896ff"
+
 
 #for i in range(int(min(Subject)), int(max(Subject))+1):
 for i in range(int(min(Subject)), N_SUBJECTS):
@@ -427,10 +438,10 @@ def model(grid):
        #y_here_centered = wrap180(y_here)
        CO_centered = wrap180(COs[CO])
 
-       axis[CO,0].plot(grid_centered[0:179].cpu(), volumeExpected[0:179].cpu())
-       axis[CO,0].plot(grid_centered[180:].cpu(), volumeExpected[180:].cpu())
+       axis[CO,0].plot(grid_centered[0:179].cpu(), volumeExpected[0:179].cpu(), color="gray")
+       axis[CO,0].plot(grid_centered[180:].cpu(), volumeExpected[180:].cpu(), color="gray")
        #axis[CO,0].scatter(grid_centered[MASK].cpu(), volume[MASK].detach().cpu())
-       axis[CO,0].scatter(grid_centered.cpu(), volume.detach().cpu())
+       axis[CO,0].scatter(grid_centered.cpu(), volume.detach().cpu(), color=COLORS[CO][0])
        #axis[CO,0].plot([grid_cpu[0], grid_cpu[-1]], [0,0])
 
        #priorExpected1 = torch.softmax(15*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]-32),dim=0)
@@ -442,26 +453,28 @@ def model(grid):
        #axis[CO,1].scatter(grid_centered[MASK].cpu(), prior[MASK].detach().cpu())
 #       axis[CO,1].plot(grid_centered[0:179].cpu(), priorExpected[0:179].detach().cpu())
  #      axis[CO,1].plot(grid_centered[180:].cpu(), priorExpected[180:].detach().cpu())
-       axis[CO,1].plot(grid_centered.cpu(), priorExpected.detach().cpu())
-       axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu())
-       axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
+       axis[CO,1].plot(grid_centered.cpu(), priorExpected.detach().cpu(), color="gray")
+       axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu(), color=COLORS[CO][0])
+       axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0], color="gray")
        #axis[CO,2].scatter(grid_centered.cpu(), (bayesianEstimate_model-grid).detach().cpu())
-       axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
-       axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
+       axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
+       axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
+       axis[N_CO,2+CONDITION].set_xticks(np.arange(90, 271, 45))
+       axis[N_CO,2+CONDITION].set_xticklabels(np.arange(-90, 91, 45))
 
-       axis[3,0].scatter(grid.cpu(), torch.softmax(init_parameters["f_t"], dim=0).detach().cpu())
+       axis[3,0].scatter(grid.cpu(), torch.softmax(init_parameters["f_t"], dim=0).detach().cpu(), color="#40E0D0")
 #       axis[3,0].
        print("f_t for plot", torch.softmax(init_parameters["f_t"], dim=0))
        #if iteration > 1:
          #quit()
        #axis[CO,3].scatter(grid_centered.cpu(), (bayesianEstimate_sd_byStimulus_model).detach().cpu())
-       axis[CO,3].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_sd_byStimulus_model)[MASK].detach().cpu())
+       axis[CO,3].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_sd_byStimulus_model)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
        #axis[CO,3].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
 #       axis[CO,4].scatter(grid_centered.cpu(), (attraction).detach().cpu())
-       axis[CO,4].scatter(grid_centered[MASK].cpu(), (attraction[MASK]).detach().cpu())
+       axis[CO,4].scatter(grid_centered[MASK].cpu(), (attraction[MASK]).detach().cpu(), color="#40E0D0")
        _, bayesianEstimate_2_4_repulsion, _, _, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], 1/GRID+MakeZeros(GRID), volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
        #axis[CO,5].scatter(grid_centered.cpu(), (bayesianEstimate_2_4_repulsion-grid).detach().cpu())
-       axis[CO,5].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_2_4_repulsion-grid)[MASK].detach().cpu())
+       axis[CO,5].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_2_4_repulsion-grid)[MASK].detach().cpu(), color="#40E0D0")
 
        kappa = 15
        kernel = torch.exp(kappa*SQUARED_STIMULUS_SIMILARITY(x_here.view(-1,1)-grid.view(1,-1))) / (2*math.pi*np.i0(kappa))
@@ -474,21 +487,25 @@ def model(grid):
 
 
 
-       axis[CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK])
-       axis[CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2)
+       axis[CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK], color=COLORS[CO][CONDITION])
+       axis[CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
        for w in [2,4,5,6,7]:
           axis[CO][w].set_ylim(-80, 80)
-       axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK])
-       axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2)
+       axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK], color=COLORS[CO][CONDITION])
+       axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
+       axis[N_CO][6+CONDITION].set_xticks(np.arange(90, 271, 45))
+       axis[N_CO][6+CONDITION].set_xticklabels(np.arange(-90, 91, 45))
        for w in [2,3,4,5,6,7]:
           axis[N_CO][w].set_ylim(-80, 80)
 
        bound1, bound2 = COs[CO]-60, COs[CO]+60
        for w in range(8):
          bound1, bound2 = CO_centered - 60 + 180, CO_centered + 60 + 180
-         axis[CO,w].plot([bound1, bound2], [0,0])
-         axis[CO,w].scatter([CO_centered.cpu()], [0], color="purple", s=10)
+         axis[CO,w].plot([bound1, bound2], [0,0],color="black", linewidth=2)
+         axis[CO,w].scatter([CO_centered.cpu()+180], [0], color="k", s=50, edgecolor="k", zorder=100)
          axis[CO,w].set_xlim(0,360)
+         axis[CO,w].set_xticks(np.arange(0, 361, 90))
+         axis[CO,w].set_xticklabels(np.arange(-180, 181, 90))
        axis[3,0].set_ylim(0, 0.01)
    if iteration % 1000 == 0:
 
@@ -498,8 +515,8 @@ def model(grid):
      axis[0,3].set_title("Variability")
      axis[0,4].set_title("Attraction")
      axis[0,5].set_title("Repulsion")
-     axis[0,6].set_title("Bias (0)")
-     axis[0,7].set_title("Bias (1)")
+     axis[0,6].set_title("Bias Ego")
+     axis[0,7].set_title("Bias Allo")
 
      print("Saving plot...")
 
