@@ -318,6 +318,133 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
       print("NAN!!!!")
       quit()
   return loss, bayesianEstimate_avg_byStimulus, bayesianEstimate_sd_byStimulus, attraction, encodingBias
+ 
+def computeBiasEGO(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, showLikelihood=False, grid=grid, responses_=None, parameters=None, computePredictions=False, subject=None, centralOrientation=None, sigma_stimulus=None, sigma2_stimulus=0, condition_=None, folds=None, lossReduce='mean'):
+ #print(f"Current CO: {COs[centralOrientation]}")
+ motor_variance = torch.exp(- parameters["log_motor_var"][centralOrientation, condition_])
+ # Part: Obtain the sensory noise variance.
+ sigma2 = 2*torch.sigmoid(sigma_logit) #maybe change 2 for 4?
+#  print(f"sigma2: {sigma2}")
+ # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
+ F = torch.cat([MakeZeros(1), torch.cumsum(volumeElement, dim=0)], dim=0)
+
+ if True:
+  # Part: Select data for the relevant fold
+  folds = MakeLongTensor(folds)
+  if subject is not None:
+    print("Subject is not None!!!")
+    MASK = torch.logical_and(condition==condition_, torch.logical_and((Fold.unsqueeze(0) == folds.unsqueeze(1)).any(dim=0), Subject==subject))
+    stimulus = stimulus_[MASK]
+    responses = responses_[MASK]
+  else:
+    MASK = torch.logical_and(condition==condition_, torch.logical_and((Fold.unsqueeze(0) == folds.unsqueeze(1)).any(dim=0), centralOrientationPerTrial==COs[centralOrientation]))
+    #print(f"MASK: {MASK}")
+    stimulus = stimulus_[MASK]
+    responses = responses_[MASK]
+  assert stimulus.view(-1).size()[0] > 0
+
+  
+  # Part: Compute sensory likelihoods. Across both interval and
+  ## circular stimulus spaces, this amounts to exponentiaring a
+  ## `similarity`
+  sensory_likelihoods = torch.softmax(((SQUARED_SENSORY_SIMILARITY(F[:-1].unsqueeze(0) - F[:-1].unsqueeze(1)))/(sigma2)) + volumeElement.unsqueeze(1).log(), dim=0)
+  # if torch.isnan(sensory_likelihoods).any():
+  #    #print(f"NaNs in sensory_likelihoods in line 146. sensory_likelihoods: {sensory_likelihoods}")
+  #    print(f"F: {F}.")
+  #    print(f"VolumeElement: {volumeElement}. ")
+     
+     #print(f"SQUARED_SENSORY_SIMILARITY(F[:-1].unsqueeze(0) - F[:-1].unsqueeze(1)): {SQUARED_SENSORY_SIMILARITY(F[:-1].unsqueeze(0) - F[:-1].unsqueeze(1))}")
+  # Part: If stimulus noise is nonzero, convolve the likelihood with the
+  ## stimulus noise.
+  if sigma2_stimulus == 0:
+    likelihoods = sensory_likelihoods
+  else:
+    ## On this dataset, this is zero, so the
+    ## code block will not be used.
+    assert False
+    likelihoods = torch.matmul(sensory_likelihoods, stimulus_likelihoods)
+
+  ## Compute posterior using Bayes' rule. As described in the paper, the posterior is computed
+  ## in the discretized stimulus space.
+  posterior = prior.unsqueeze(1) * likelihoods.t()
+
+  posterior = posterior / posterior.sum(dim=0, keepdim=True)
+  # if torch.isnan(posterior).any():
+  #    print(f"NaNs in posterior in line 165.")
+
+  ## Compute the estimator for each m in the discretized sensory space.
+  # bayesianEstimate = LPEstimator.apply(grid_indices_here, posterior)
+  if condition_ == 0:
+    #if P == 0:
+    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
+    #elif P>0:
+    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
+      
+  elif condition_ == 1:
+    #if P1 == 0:
+    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
+    #elif P1>0:
+    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
+
+  ## Compute the motor likelihood
+  ## `error' refers to the stimulus similarity between the estimator assigned to each m and
+  ## the observations found in the dataset.
+  ## The Gaussian or von Mises motor likelihood is obtained by exponentiating and normalizing
+  error = (SQUARED_STIMULUS_SIMILARITY(360/GRID*bayesianEstimate.unsqueeze(0) - responses.unsqueeze(1)))
+  ## The log normalizing constants, for each m in the discretized sensory space
+  log_normalizing_constant = torch.logsumexp((SQUARED_STIMULUS_SIMILARITY(grid))/motor_variance, dim=0) + math.log(2 * math.pi / GRID)
+  ## The log motor likelihoods, for each pair of sensory encoding m and observed human response
+  log_motor_likelihoods = (error/motor_variance) - log_normalizing_constant
+  ## Obtaining the motor likelihood by exponentiating.
+  motor_likelihoods = torch.exp(log_motor_likelihoods)
+  ## Obtain the guessing rate, parameterized via the (inverse) logit transform as described in SI Appendix
+  # Mixture of estimation and uniform response
+  uniform_part = torch.sigmoid(parameters["mixture_logit"][centralOrientation])
+  ## The full likelihood then consists of a mixture of the motor likelihood calculated before, and the uniform
+  ## distribution on the full space.
+  motor_likelihoods = (1-uniform_part) * motor_likelihoods + (uniform_part / (2*math.pi) + 0*motor_likelihoods)
+
+  # Now the loss is obtained by marginalizing out m from the motor likelihood
+  if lossReduce == 'mean':
+    loss = -torch.gather(input=torch.matmul(motor_likelihoods, likelihoods),dim=1,index=stimulus.unsqueeze(1)).squeeze(1).log().mean()
+  elif lossReduce == 'sum':
+    loss = -torch.gather(input=torch.matmul(motor_likelihoods, likelihoods),dim=1,index=stimulus.unsqueeze(1)).squeeze(1).log().sum()
+  else:
+    assert False
+
+  ## If computePredictions==True, compute the bias and variability of the estimate
+  if computePredictions:
+     bayesianEstimate_byStimulus = bayesianEstimate.unsqueeze(1)/INVERSE_DISTANCE_BETWEEN_NEIGHBORING_GRID_POINTS
+     bayesianEstimate_avg_byStimulus = computeCircularMeanWeighted(bayesianEstimate_byStimulus, likelihoods)
+     bayesianEstimate_sd_byStimulus = computeCircularSDWeighted(bayesianEstimate_byStimulus, likelihoods)
+     bayesianEstimate_sd_byStimulus = torch.sqrt(bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * 3282.806)
+     #bayesianEstimate_sd_byStimulus = (bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * math.pow(180/math.pi,2)).sqrt()
+
+     bayesianEstimate_avg_byStimulus = torch.where((bayesianEstimate_avg_byStimulus-grid).abs()<180, bayesianEstimate_avg_byStimulus, torch.where(bayesianEstimate_avg_byStimulus > 180, bayesianEstimate_avg_byStimulus-360, bayesianEstimate_avg_byStimulus+360))
+     assert float(((bayesianEstimate_avg_byStimulus-grid).abs()).max()) <= 180, float(((bayesianEstimate_avg_byStimulus-grid).abs()).max())
+     posteriorMaxima = grid[posterior.argmax(dim=0)]
+     posteriorMaxima = computeCircularMeanWeighted(posteriorMaxima.unsqueeze(1), likelihoods)
+     encodingBias = computeCircularMeanWeighted(grid.unsqueeze(1), likelihoods)
+     attraction = (posteriorMaxima-encodingBias)
+     attraction1 = attraction
+     attraction2 = attraction+360
+     attraction3 = attraction-360
+     attraction = torch.where(attraction1.abs() < 180, attraction1, torch.where(attraction2.abs() < 180, attraction2, attraction3))
+     encodingBias = encodingBias-grid
+     encodingBias1 = encodingBias
+     encodingBias2 = encodingBias+360
+     encodingBias3 = encodingBias-360
+     encodingBias = torch.where(encodingBias1.abs() < 180, encodingBias1, torch.where(encodingBias2.abs() < 180, encodingBias2, encodingBias3))
+  else:
+     bayesianEstimate_avg_byStimulus = None
+     bayesianEstimate_sd_byStimulus = None
+     attraction = None
+     encodingBias = None
+
+  if float(loss) != float(loss):
+      print("NAN!!!!")
+      quit()
+  return loss, bayesianEstimate_avg_byStimulus, bayesianEstimate_sd_byStimulus, attraction, encodingBias
 
 def retrieveObservations(x, Subject_, Condition_, meanMethod = "circular"):
      assert Subject_ is None
@@ -376,6 +503,9 @@ def model(grid):
   lossAverageOver500 = 0
   crossValidLossAverageOver500 = 0
   ELBOAverageOver500 = 0
+
+  bayesianEstimate_modelEGO = {}
+
   for iteration in range(10000000):
    parameters = init_parameters
    ## In each iteration, recompute
@@ -417,6 +547,12 @@ def model(grid):
      ## Run the model at its current parameter values.
      loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
+
+     if iteration == 0:
+      volumeEGO = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(init_parameters["volume"][CO,0],dim=0)
+      priorEGO = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,0], dim=0)
+      _, bayesianEstimate_EGO, _, _, _ = computeBiasEGO(xValues, init_parameters["sigma_logit"][CO,0], priorEGO, volumeEGO, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=0, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
+      bayesianEstimate_modelEGO[CO] = bayesianEstimate_EGO.detach().clone()
 
      if iteration % 1000 == 0:
        ## Visualization
@@ -463,6 +599,8 @@ def model(grid):
        axis[N_CO,2+CONDITION].set_xticklabels(np.arange(-90, 91, 45))
 
        axis[3,0].scatter(grid.cpu(), torch.softmax(init_parameters["f_t"], dim=0).detach().cpu(), color="#40E0D0")
+       axis[3,0].set_xticks(np.arange(0, 361, 90))
+       axis[3,0].set_xticklabels(np.arange(-180, 181, 90))
 #       axis[3,0].
        print("f_t for plot", torch.softmax(init_parameters["f_t"], dim=0))
        #if iteration > 1:
@@ -485,7 +623,7 @@ def model(grid):
        y_smoothed = computeCircularMeanWeighted(bias.unsqueeze(1), kernel)
        y_smoothed = torch.where(y_smoothed > 180, y_smoothed-360, torch.where(y_smoothed < -180, y_smoothed+360, y_smoothed))
 
-
+       axis[CO,6].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_modelEGO[CO]-grid)[MASK].detach().cpu(), color=COLORS[CO][0]) #Plotting the egocentric bias
 
        axis[CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK], color=COLORS[CO][CONDITION])
        axis[CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])

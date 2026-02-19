@@ -413,6 +413,10 @@ def model(grid):
        axis[CO,1].plot(grid_centered.cpu(), priorExpected.detach().cpu(), color="gray")
        axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu(), color=COLORS[CO][CONDITION])
        axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0], color="gray")
+       axis[CO,1].plot([145, 145], [0,0.045], '--', color="gray")
+       axis[CO,1].plot([180, 180], [0,0.045], '--', color="gray")
+       axis[CO,1].plot([215, 215], [0,0.045], '--', color="gray")
+
        #axis[CO,2].scatter(grid_centered.cpu(), (bayesianEstimate_model-grid).detach().cpu())
        axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
        axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
