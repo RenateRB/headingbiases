@@ -196,24 +196,24 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
   ## Compute the estimator for each m in the discretized sensory space.
   # bayesianEstimate = LPEstimator.apply(grid_indices_here, posterior)
-#  if condition_ == 0:
-#    #if P == 0:
-#    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
-#    #elif P>0:
-#    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
-#      
-#  elif condition_ == 1:
-#    #if P1 == 0:
-#    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
-#    #elif P1>0:
-#    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
+  if condition_ == 0:
+    #if P == 0:
+    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
+    #elif P>0:
+    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
+      
+  elif condition_ == 1:
+    #if P1 == 0:
+    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
+    #elif P1>0:
+    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
 
   # now we a round of mapping
   sigma2_t = 10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
  #  print(f"sigma2: {sigma2}")
   # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
 
-  mapping_likelihoods = torch.softmax(-(grid.unsqueeze(0) - grid.unsqueeze(1)).pow(2) / (sigma2_t), dim=0)
+  mapping_likelihoods = torch.softmax(-(360/GRID*bayesianEstimate.unsqueeze(0) - grid.unsqueeze(1)).pow(2) / (sigma2_t), dim=0)
 #  print(mapping_likelihoods)
   # now a second transfer
   sigma2_t2 = 2*torch.sigmoid(init_parameters["sigma2_t2"]) #maybe change 2 for 4?
@@ -278,18 +278,12 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
      bayesianEstimate_byStimulus = bayesianEstimateSecond.unsqueeze(1)/INVERSE_DISTANCE_BETWEEN_NEIGHBORING_GRID_POINTS
 #     print(bayesianEstimateSecond.size(), bayesianEstimate.size(), overall_likelihood.size(), likelihoods.size())
      bayesianEstimate_avg_byStimulus = computeCircularMeanWeighted(bayesianEstimate_byStimulus, likelihood_including_trafo)
-#     if bayesianEstimate_avg_byStimulus.max() > 360 or bayesianEstimate_avg_byStimulus.min() < 0:
-#       print("WARNING: Unexpected output values from computeCircularMeanWeighted", bayesianEstimate_avg_byStimulus.view(-1))
-#       bayesianEstimate_avg_byStimulus = bayesianEstimate_avg_byStimulus % 360
-#     quit()
      bayesianEstimate_sd_byStimulus = computeCircularSDWeighted(bayesianEstimate_byStimulus, likelihood_including_trafo)
      bayesianEstimate_sd_byStimulus = torch.sqrt(bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * 3282.806)
      #bayesianEstimate_sd_byStimulus = (bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * math.pow(180/math.pi,2)).sqrt()
 
      bayesianEstimate_avg_byStimulus = torch.where((bayesianEstimate_avg_byStimulus-grid).abs()<180, bayesianEstimate_avg_byStimulus, torch.where(bayesianEstimate_avg_byStimulus > 180, bayesianEstimate_avg_byStimulus-360, bayesianEstimate_avg_byStimulus+360))
-     # Try again to capture remaining ones
-     bayesianEstimate_avg_byStimulus = torch.where((bayesianEstimate_avg_byStimulus-grid).abs()<180, bayesianEstimate_avg_byStimulus, torch.where(bayesianEstimate_avg_byStimulus > 180, bayesianEstimate_avg_byStimulus-360, bayesianEstimate_avg_byStimulus+360))
-     assert float(((bayesianEstimate_avg_byStimulus-grid).abs()).max()) <= 180, (float(((bayesianEstimate_avg_byStimulus-grid).abs()).max()), bayesianEstimate_avg_byStimulus.min(), bayesianEstimate_avg_byStimulus.max())
+     assert float(((bayesianEstimate_avg_byStimulus-grid).abs()).max()) <= 180, float(((bayesianEstimate_avg_byStimulus-grid).abs()).max())
      posteriorMaxima = grid[posterior.argmax(dim=0)]
      posteriorMaxima = computeCircularMeanWeighted(posteriorMaxima.unsqueeze(1), likelihoods)
      encodingBias = computeCircularMeanWeighted(grid.unsqueeze(1), likelihoods)
