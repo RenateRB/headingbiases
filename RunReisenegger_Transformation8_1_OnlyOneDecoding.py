@@ -251,10 +251,10 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   motor_likelihoods = torch.exp(log_motor_likelihoods)
   ## Obtain the guessing rate, parameterized via the (inverse) logit transform as described in SI Appendix
   # Mixture of estimation and uniform response
-#  uniform_part = torch.sigmoid(parameters["mixture_logit"][centralOrientation])
+  uniform_part = torch.sigmoid(parameters["mixture_logit"][centralOrientation])
   ## The full likelihood then consists of a mixture of the motor likelihood calculated before, and the uniform
   ## distribution on the full space.
- # motor_likelihoods = (1-uniform_part) * motor_likelihoods + (uniform_part / (2*math.pi) + 0*motor_likelihoods)
+  motor_likelihoods = (1-uniform_part) * motor_likelihoods + (uniform_part / (2*math.pi) + 0*motor_likelihoods)
 
   
 
@@ -278,10 +278,6 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
      bayesianEstimate_byStimulus = bayesianEstimateSecond.unsqueeze(1)/INVERSE_DISTANCE_BETWEEN_NEIGHBORING_GRID_POINTS
 #     print(bayesianEstimateSecond.size(), bayesianEstimate.size(), overall_likelihood.size(), likelihoods.size())
      bayesianEstimate_avg_byStimulus = computeCircularMeanWeighted(bayesianEstimate_byStimulus, likelihood_including_trafo)
-#     if bayesianEstimate_avg_byStimulus.max() > 360 or bayesianEstimate_avg_byStimulus.min() < 0:
-#       print("WARNING: Unexpected output values from computeCircularMeanWeighted", bayesianEstimate_avg_byStimulus.view(-1))
-#       bayesianEstimate_avg_byStimulus = bayesianEstimate_avg_byStimulus % 360
-#     quit()
      bayesianEstimate_sd_byStimulus = computeCircularSDWeighted(bayesianEstimate_byStimulus, likelihood_including_trafo)
      bayesianEstimate_sd_byStimulus = torch.sqrt(bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * 3282.806)
      #bayesianEstimate_sd_byStimulus = (bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * math.pow(180/math.pi,2)).sqrt()
@@ -638,7 +634,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   #init_parameters["SIGMA_volumeBySubject"] = MakeZeros(2,N_SUBJECTS,2*FOURIER_BASIS_SIZE) #Different for each condition
 
   from util import loadParameters
-  loadParameters(init_parameters, f"logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_{REG_WEIGHT}_180.txt")
+  loadParameters(init_parameters, f"logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_{P}_0_{REG_WEIGHT}_180.txt")
   init_parameters["volume"][:,1] = init_parameters["volume"][:,0]
   init_parameters["priorByCO"][:,1] = init_parameters["priorByCO"][:,0]
  # print(init_parameters["volume"])
