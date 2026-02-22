@@ -632,7 +632,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   #init_parameters["SIGMA_volumeBySubject"] = MakeZeros(2,N_SUBJECTS,2*FOURIER_BASIS_SIZE) #Different for each condition
 
   from util import loadParameters
-  loadParameters(init_parameters, "logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt")
+  loadParameters(init_parameters, f"logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_{REG_WEIGHT}_180.txt")
   init_parameters["volume"][:,1] = init_parameters["volume"][:,0]
   init_parameters["priorByCO"][:,1] = init_parameters["priorByCO"][:,0]
  # print(init_parameters["volume"])
