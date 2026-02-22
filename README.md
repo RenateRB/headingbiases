@@ -56,6 +56,8 @@ TODO
 
 ### Transformation after decoding
 
+@TODO from MH: Figure out issue with "inf", understand commit mentioned in email
+
 Freeze encoding and prior based on the egocentric condition
 
 Here, there are two rounds of Bayesian decoding.
@@ -81,6 +83,8 @@ TODO
 
 
 ### Transformation without decoding
+
+@TODO from MH: I have changed so that the ego fits with the same REG_WEIGHT as used in fitting are used. However, at REG_WEIGHT=1.0, this leads to crashing. The issue seems to be that the priors are extremely steep.
 
 Freeze encoding and prior based on the egocentric condition
 
