@@ -60,6 +60,8 @@ Freeze encoding and prior based on the egocentric condition
 
 Here, there are two rounds of Bayesian decoding.
 
+@TODO: (MH) It would probably be nice to fix the visualization of "Attraction", which doesn't seem to make sense here. One needs to consider how it interacts with the transformation.
+
 Command:
 
     python3 RunReisenegger_Transformation8_1.py 2 0 1.0 180 50
