@@ -27,7 +27,7 @@ Command:
 
     python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_L0.py 0 0 1.0 180 50
     python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_L1.py 1 0 1.0 180 50
-    for i in 2 4 6 8 ; do python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py $i 0 1.0 180 50 ; done
+    for i in 4 6 8 ; do python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py $i 0 1.0 180 50 ; done
 
 Resulting goodness of fit: TODO plot PNG
 
@@ -56,8 +56,6 @@ TODO
 
 ### Transformation after decoding
 
-@TODO from MH: Figure out issue with "inf", understand commit mentioned in email
-
 Freeze encoding and prior based on the egocentric condition
 
 Here, there are two rounds of Bayesian decoding.
@@ -77,16 +75,25 @@ Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1.py_2_0_1.0_1
 
 All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt)
 
+The goodness of fit is much stronger than when we do direct fitting. The difference in fact is strikingly large. We need to sanity-check that this is real and not some kind of artifact.
+
 #### Fit across exponents
 
-TODO
+Commands:
+
+    python3 RunReisenegger_Transformation8_1_L0-L0.py 0-0 0 1.0 180 50
+    python3 RunReisenegger_Transformation8_1_L0-L0.py 0-0 0 10.0 180 50
+    python3 RunReisenegger_Transformation8_1_L1.py 1 0 1.0 180 50
+    python3 RunReisenegger_Transformation8_1_L1.py 1 0 10.0 180 50
+    for i in 4 6 8 ; do python3 RunReisenegger_Transformation8_1.py $i 0 1.0 180 50 ; done
+    for i in 4 6 8 ; do python3 RunReisenegger_Transformation8_1.py $i 0 10.0 180 50 ; done
 
 
 ### Transformation without decoding
 
-@TODO from MH: I have changed so that the ego fits with the same REG_WEIGHT as used in fitting are used. However, at REG_WEIGHT=1.0, this leads to crashing. The issue seems to be that the priors are extremely steep.
-
 Freeze encoding and prior based on the egocentric condition
+
+This is close to the model from Remington et al's work.
 
 Command:
 
@@ -101,7 +108,37 @@ PDF link: [here](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0
 
 Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt)
 
+Performance seems slightly worse than the previous version.
+
 All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt)
+
+#### Fit across exponents
+
+TODO
+
+
+### Transformation without decoding (second version)
+
+Freeze encoding and prior based on the egocentric condition
+
+This is close to the model from Remington et al's work.
+
+Command:
+
+    python3 RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py 2 0 1.0 180 50
+
+Fit (REG_WEIGHT=1.0): ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_1.0_180_50.png)
+
+Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_10.0_180_50.png)
+
+PDF link: [here](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_1.0_180_50.pdf)
+
+
+Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_1.0_180.txt)
+
+Performance seems slightly worse than the previous version.
+
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_1.0_180.txt)
 
 #### Fit across exponents
 
