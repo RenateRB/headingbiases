@@ -58,7 +58,7 @@ TODO
 
 Freeze encoding and prior based on the egocentric condition
 
-Here, there are two rounds of Bayesian decoding.
+Here, there are two rounds of Bayesian decoding: one before the transformation, and one after it.
 
 @TODO: (MH) It would probably be nice to fix the visualization of "Attraction", which doesn't seem to make sense here. One needs to consider how it interacts with the transformation.
 
@@ -95,7 +95,7 @@ Commands:
 
 Freeze encoding and prior based on the egocentric condition
 
-This is close to the model from Remington et al's work.
+This is close to the model from Remington et al's work. This one is intermediate between the previous and following versions; those two are probably better motivated than this one itself.
 
 Command:
 
@@ -119,7 +119,7 @@ All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8
 TODO
 
 
-### Transformation without decoding (second version)
+### Transformation without decoding (second version, simplest)
 
 Freeze encoding and prior based on the egocentric condition
 
