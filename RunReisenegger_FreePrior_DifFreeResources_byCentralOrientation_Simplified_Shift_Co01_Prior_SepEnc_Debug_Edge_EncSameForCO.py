@@ -373,7 +373,7 @@ def model(grid):
    for CONDITION in range(2):
     for CO in range(N_CO):
      volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][0,CONDITION],dim=0)
-     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION] + responseRangeMask[CONDITION], dim=0)
+     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION] + responseRangeMask, dim=0)
      ## Run the model at its current parameter values.
      loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
@@ -479,7 +479,7 @@ def model(grid):
           continue
       for CO in range(N_CO):
        volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][0,CONDITION], dim=0)
-       prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION] + responseRangeMask[CONDITION], dim=0)
+       prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION] + responseRangeMask, dim=0)
        #shift_by = GRID-int((grid-COs[CO]).abs().argmin())
        print(f"COs[CO]: {COs[CO]}")
        #prior = torch.cat([prior_overall[shift_by:], prior_overall[:shift_by]], dim=0)
