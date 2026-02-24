@@ -209,7 +209,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 #    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
 
   # now we a round of mapping
-  sigma2_t = 10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
+  sigma2_t = 0.001 #10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
  #  print(f"sigma2: {sigma2}")
   # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
 

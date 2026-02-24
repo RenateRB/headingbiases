@@ -259,7 +259,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 #  print(mapping_likelihoods)
   # now a second transfer
   sigma2_t2 = 2*torch.sigmoid(init_parameters["sigma2_t2"]) #maybe change 2 for 4?
-  F_t = torch.cat([MakeZeros(1), torch.cumsum(torch.softmax(init_parameters["f_t"], dim=0), dim=0)], dim=0)
+  F_t = torch.cat([MakeZeros(1), torch.cumsum(torch.softmax(0*init_parameters["f_t"], dim=0), dim=0)], dim=0)
   transfer_likelihoods = torch.softmax(-(F_t[:-1].unsqueeze(0) - F_t[:-1].unsqueeze(1)).pow(2) / (sigma2_t2), dim=0)
   print("f_t", torch.softmax(init_parameters["f_t"], dim=0))
 

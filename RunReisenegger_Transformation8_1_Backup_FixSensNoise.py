@@ -342,16 +342,28 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
      encodingBias2 = encodingBias+360
      encodingBias3 = encodingBias-360
      encodingBias = torch.where(encodingBias1.abs() < 180, encodingBias1, torch.where(encodingBias2.abs() < 180, encodingBias2, encodingBias3))
+
+
+     # EGO-Only Bias
+     EGO_bayesianEstimate_byStimulus = bayesianEstimate.unsqueeze(1)/INVERSE_DISTANCE_BETWEEN_NEIGHBORING_GRID_POINTS
+     EGO_bayesianEstimate_avg_byStimulus = computeCircularMeanWeighted(EGO_bayesianEstimate_byStimulus, likelihoods)
+     EGO_bayesianEstimate_sd_byStimulus = computeCircularSDWeighted(EGO_bayesianEstimate_byStimulus, likelihoods)
+     EGO_bayesianEstimate_sd_byStimulus = torch.sqrt(EGO_bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * 3282.806)
+
+
+
   else:
      bayesianEstimate_avg_byStimulus = None
      bayesianEstimate_sd_byStimulus = None
+     EGO_bayesianEstimate_avg_byStimulus = None
+     EGO_bayesianEstimate_sd_byStimulus = None
      attraction = None
      encodingBias = None
 
   if float(loss) != float(loss):
       print("NAN!!!!")
       quit()
-  return loss, bayesianEstimate_avg_byStimulus, bayesianEstimate_sd_byStimulus, attraction, encodingBias
+  return loss, bayesianEstimate_avg_byStimulus, bayesianEstimate_sd_byStimulus, attraction, encodingBias, EGO_bayesianEstimate_avg_byStimulus, EGO_bayesianEstimate_sd_byStimulus
 
 def retrieveObservations(x, Subject_, Condition_, meanMethod = "circular"):
      assert Subject_ is None
@@ -449,7 +461,7 @@ def model(grid):
      volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION],dim=0).detach()
      prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0).detach()
      ## Run the model at its current parameter values.
-     loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION].detach(), prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
+     loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias, EGO_bayesianEstimate_model, EGO_bayesianEstimate_sd_byStimulus_model = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION].detach(), prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
 
      if iteration % 1000 == 0:
@@ -492,6 +504,9 @@ def model(grid):
        axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
        #axis[CO,2].scatter(grid_centered.cpu(), (bayesianEstimate_model-grid).detach().cpu())
        axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
+       axis[CO,6].scatter(grid_centered[MASK].cpu(), (EGO_bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
+
+
        axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
 
        axis[3,0].scatter(grid.cpu(), torch.softmax(init_parameters["f_t"], dim=0).detach().cpu())
@@ -504,7 +519,7 @@ def model(grid):
        #axis[CO,3].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
 #       axis[CO,4].scatter(grid_centered.cpu(), (attraction).detach().cpu())
        axis[CO,4].scatter(grid_centered[MASK].cpu(), (attraction[MASK]).detach().cpu())
-       _, bayesianEstimate_2_4_repulsion, _, _, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], 1/GRID+MakeZeros(GRID), volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
+       _, bayesianEstimate_2_4_repulsion, _, _, _, _, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], 1/GRID+MakeZeros(GRID), volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
        #axis[CO,5].scatter(grid_centered.cpu(), (bayesianEstimate_2_4_repulsion-grid).detach().cpu())
        axis[CO,5].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_2_4_repulsion-grid)[MASK].detach().cpu())
 
@@ -563,7 +578,7 @@ def model(grid):
        print(f"COs[CO]: {COs[CO]}")
        #prior = torch.cat([prior_overall[shift_by:], prior_overall[:shift_by]], dim=0)
 
-       loss_2_4, bayesianEstimate_2_4, bayesianEstimate_sd_byStimulus_2_4, attraction, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%100 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=testFolds, lossReduce='sum', centralOrientation=CO)
+       loss_2_4, bayesianEstimate_2_4, bayesianEstimate_sd_byStimulus_2_4, attraction, _, _, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%100 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=testFolds, lossReduce='sum', centralOrientation=CO)
        assert loss_2_4 < float('inf'), loss_2_4
        crossValidLoss += loss_2_4
 

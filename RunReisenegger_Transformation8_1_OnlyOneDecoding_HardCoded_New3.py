@@ -14,7 +14,6 @@ from cosineEstimator import CosineEstimator1
 #from mapCircularEstimator2 import MAPCircularEstimator1
 from loadReisenegger_P2 import *
 from matplotlib import rc
-from util import savePlotPDFAndPNG
 from util import MakeFloatTensor
 from util import MakeLongTensor
 from util import MakeZeros
@@ -31,7 +30,6 @@ from util import toFactor
 
 __file__ = __file__.split("/")[-1]
 rc('font', **{'family':'Arial'})
-plt.rcParams.update({'font.size': 14})
 
 OPTIMIZER_VERBOSE = False
 
@@ -76,16 +74,6 @@ N_SUBJECTS = int(max(Subject))+1
 COs = torch.unique(centralOrientationPerTrial)
 CO_size = COs.size()
 N_CO = CO_size[0]
-
-# Colors by CO and condition
-COLORS = [[None for _ in range(2)] for _ in range(3)]
-COLORS[0][0] = "#ff0000"
-COLORS[1][0] = "#88000a"
-COLORS[2][0] = "#ff9696"
-COLORS[0][1] = "#801aff"
-COLORS[1][1] = "#4d0f99"
-COLORS[2][1] = "#c896ff"
-
 
 #for i in range(int(min(Subject)), int(max(Subject))+1):
 for i in range(int(min(Subject)), N_SUBJECTS):
@@ -157,7 +145,6 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
  motor_variance = torch.exp(- parameters["log_motor_var"][centralOrientation, condition_])
  # Part: Obtain the sensory noise variance.
  sigma2 = 2*torch.sigmoid(sigma_logit) #maybe change 2 for 4?
-# sigma2 = .00001
 #  print(f"sigma2: {sigma2}")
  # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
  F = torch.cat([MakeZeros(1), torch.cumsum(volumeElement, dim=0)], dim=0)
@@ -208,58 +195,29 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
   ## Compute the estimator for each m in the discretized sensory space.
   # bayesianEstimate = LPEstimator.apply(grid_indices_here, posterior)
-  if condition_ == 0:
-    #if P == 0:
-    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
-    #elif P>0:
-    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
-      
-  elif condition_ == 1:
-    #if P1 == 0:
-    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
-    #elif P1>0:
-    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
-
+#  if condition_ == 0:
+#    #if P == 0:
+#    #  bayesianEstimate = MAPCircularEstimator.apply(grid_indices_here, posterior)
+#    #elif P>0:
+#    bayesianEstimate = CosineEstimator.apply(grid_indices_here, posterior)
+#      
+#  elif condition_ == 1:
+#    #if P1 == 0:
+#    #  bayesianEstimate = MAPCircularEstimator1.apply(grid_indices_here, posterior)
+#    #elif P1>0:
+#    bayesianEstimate = CosineEstimator1.apply(grid_indices_here, posterior)
 
   # now we a round of mapping
-  sigma2_t = .001 #+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
+  sigma2_t = 10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
  #  print(f"sigma2: {sigma2}")
   # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
-#  print(bayesianEstimate)
-#  quit()
 
-  # IMPORTANT: This previously was done with L2 instead of cosine, which doesn't make sense at the boundary.
-  mapping_likelihoods = torch.softmax(torch.cos(2*math.pi/GRID*bayesianEstimate.unsqueeze(0) - 2*math.pi/MAX_GRID * grid.unsqueeze(1)) / (sigma2_t), dim=0)
-#  print(mapping_likelihoods[:,0], grid[0])
-#  print(mapping_likelihoods[:,5], grid[5], bayesianEstimate)
-#  quit()
-  print(360, GRID, grid.max(), bayesianEstimate.max())
-  if False:
-     import matplotlib.pyplot as plt
-   
-     plt.figure(figsize=(8, 6))
-     plt.scatter(grid.detach().numpy()-180, (2*bayesianEstimate-grid).detach().numpy())
-     plt.show()
-     plt.close()
-  if False:     
-     # Assume mapping_likelihoods is a 2D PyTorch tensor (e.g., shape [H, W])
-     # If it's on GPU or requires gradients, we detach and move to CPU
-     likelihoods_np = mapping_likelihoods.detach().cpu().numpy()
-     
-     # Create the heatmap
-     plt.figure(figsize=(8, 6))
-     plt.imshow(likelihoods_np, cmap='viridis', aspect='auto', origin='upper')
-     plt.colorbar(label='Likelihood')
-     plt.title('Mapping Likelihoods Heatmap')
-     plt.xlabel('X axis')
-     plt.ylabel('Y axis')
-     plt.tight_layout()
-     plt.show()
-     quit()
+  mapping_likelihoods = torch.softmax(-(grid.unsqueeze(0) - grid.unsqueeze(1)).pow(2) / (sigma2_t), dim=0)
 #  print(mapping_likelihoods)
   # now a second transfer
   sigma2_t2 = 2*torch.sigmoid(init_parameters["sigma2_t2"]) #maybe change 2 for 4?
-  F_t = torch.cat([MakeZeros(1), torch.cumsum(torch.softmax(init_parameters["f_t"], dim=0), dim=0)], dim=0)
+  transform_FI = torch.softmax((1+init_parameters["f_t"][0])*SQUARED_STIMULUS_SIMILARITY(grid-180), dim=0).detach() #init_parameters["f_t"]
+  F_t = torch.cat([MakeZeros(1), torch.cumsum(transform_FI, dim=0)], dim=0)
   transfer_likelihoods = torch.softmax(-(F_t[:-1].unsqueeze(0) - F_t[:-1].unsqueeze(1)).pow(2) / (sigma2_t2), dim=0)
   print("f_t", torch.softmax(init_parameters["f_t"], dim=0))
 
@@ -281,11 +239,8 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   ## `error' refers to the stimulus similarity between the estimator assigned to each m and
   ## the observations found in the dataset.
   ## The Gaussian or von Mises motor likelihood is obtained by exponentiating and normalizing
-  #bayesianEstimateSecond = bayesianEstimate #### !!!!!!!
   error = (SQUARED_STIMULUS_SIMILARITY(360/GRID*bayesianEstimateSecond.unsqueeze(0) - responses.unsqueeze(1)))
 
-
-  #likelihood_including_trafo = likelihoods #### !!!!!!!!!!
 
 
   ## The log normalizing constants, for each m in the discretized sensory space
@@ -296,10 +251,10 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   motor_likelihoods = torch.exp(log_motor_likelihoods)
   ## Obtain the guessing rate, parameterized via the (inverse) logit transform as described in SI Appendix
   # Mixture of estimation and uniform response
-  uniform_part = torch.sigmoid(parameters["mixture_logit"][centralOrientation])
+#  uniform_part = torch.sigmoid(parameters["mixture_logit"][centralOrientation])
   ## The full likelihood then consists of a mixture of the motor likelihood calculated before, and the uniform
   ## distribution on the full space.
-  motor_likelihoods = (1-uniform_part) * motor_likelihoods + (uniform_part / (2*math.pi) + 0*motor_likelihoods)
+ # motor_likelihoods = (1-uniform_part) * motor_likelihoods + (uniform_part / (2*math.pi) + 0*motor_likelihoods)
 
   
 
@@ -342,28 +297,16 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
      encodingBias2 = encodingBias+360
      encodingBias3 = encodingBias-360
      encodingBias = torch.where(encodingBias1.abs() < 180, encodingBias1, torch.where(encodingBias2.abs() < 180, encodingBias2, encodingBias3))
-
-
-     # EGO-Only Bias
-     EGO_bayesianEstimate_byStimulus = bayesianEstimate.unsqueeze(1)/INVERSE_DISTANCE_BETWEEN_NEIGHBORING_GRID_POINTS
-     EGO_bayesianEstimate_avg_byStimulus = computeCircularMeanWeighted(EGO_bayesianEstimate_byStimulus, likelihoods)
-     EGO_bayesianEstimate_sd_byStimulus = computeCircularSDWeighted(EGO_bayesianEstimate_byStimulus, likelihoods)
-     EGO_bayesianEstimate_sd_byStimulus = torch.sqrt(EGO_bayesianEstimate_sd_byStimulus.pow(2) + motor_variance * 3282.806)
-
-
-
   else:
      bayesianEstimate_avg_byStimulus = None
      bayesianEstimate_sd_byStimulus = None
-     EGO_bayesianEstimate_avg_byStimulus = None
-     EGO_bayesianEstimate_sd_byStimulus = None
      attraction = None
      encodingBias = None
 
   if float(loss) != float(loss):
       print("NAN!!!!")
       quit()
-  return loss, bayesianEstimate_avg_byStimulus, bayesianEstimate_sd_byStimulus, attraction, encodingBias, EGO_bayesianEstimate_avg_byStimulus, EGO_bayesianEstimate_sd_byStimulus
+  return loss, bayesianEstimate_avg_byStimulus, bayesianEstimate_sd_byStimulus, attraction, encodingBias
 
 def retrieveObservations(x, Subject_, Condition_, meanMethod = "circular"):
      assert Subject_ is None
@@ -429,7 +372,6 @@ def model(grid):
    ## - the prior
 
    #volume = 2 * math.pi * torch.nn.functional.softmax(parameters["volume"], dim=0)
-   #prior = torch.nn.functional.softmax(parameters["prior"], dim=0)
    loss = 0
    grid_cpu = grid.cpu()
    if iteration % 1000 == 0:
@@ -456,12 +398,18 @@ def model(grid):
 
    ## Iterate over the conditions and possibly subjects, if parameters are fitted separately.
    ## In this dataset, all parameters are fitted across subjects.
+   A = 2 + init_parameters["volume"][0,0,0]
+   B = 2 + init_parameters["volume"][0,0,1]
+   volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax((A - torch.sin(2*grid/180*math.pi).abs() + B * torch.cos((2*grid/180+1)*math.pi).pow(2) * torch.cos((grid/180+1)*math.pi).pow(2) * (1+torch.cos((grid/180+1)*math.pi))/2).log(), dim=0) #.detach()
+
    for CONDITION in [1]:
     for CO in range(N_CO):
-     volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION],dim=0) #.detach()
-     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0) #.detach()
+#parameters["volume"][CO,CONDITION],dim=0).detach()
+     C = 5 + init_parameters["prior"][0].detach()
+     D = init_parameters["prior"][1+CO]
+     prior = torch.nn.functional.softmax(C*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]+D-180)) #.detach()
      ## Run the model at its current parameter values.
-     loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias, EGO_bayesianEstimate_model, EGO_bayesianEstimate_sd_byStimulus_model = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
+     loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
 
      if iteration % 1000 == 0:
@@ -479,15 +427,15 @@ def model(grid):
 #          return ((x + 180) % 360) - 180
 
        grid_centered = wrap180(grid)
-       print(grid_centered)
+       assert (grid_centered - grid).abs().max() < 1e-5
        x_here_centered = wrap180(x_here)
        #y_here_centered = wrap180(y_here)
        CO_centered = wrap180(COs[CO])
 
-       axis[CO,0].plot(grid_centered[0:179].cpu(), volumeExpected[0:179].cpu(), color="gray")
-       axis[CO,0].plot(grid_centered[180:].cpu(), volumeExpected[180:].cpu(), color="gray")
+       axis[CO,0].plot(grid_centered[0:179].cpu(), volumeExpected[0:179].cpu())
+       axis[CO,0].plot(grid_centered[180:].cpu(), volumeExpected[180:].cpu())
        #axis[CO,0].scatter(grid_centered[MASK].cpu(), volume[MASK].detach().cpu())
-       axis[CO,0].scatter(grid_centered.cpu(), volume.detach().cpu(), color=COLORS[CO][CONDITION])
+       axis[CO,0].scatter(grid_centered.cpu(), volume.detach().cpu())
        #axis[CO,0].plot([grid_cpu[0], grid_cpu[-1]], [0,0])
 
        #priorExpected1 = torch.softmax(15*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]-32),dim=0)
@@ -499,36 +447,26 @@ def model(grid):
        #axis[CO,1].scatter(grid_centered[MASK].cpu(), prior[MASK].detach().cpu())
 #       axis[CO,1].plot(grid_centered[0:179].cpu(), priorExpected[0:179].detach().cpu())
  #      axis[CO,1].plot(grid_centered[180:].cpu(), priorExpected[180:].detach().cpu())
-       axis[CO,1].plot(grid_centered.cpu(), priorExpected.detach().cpu(), color="gray")
-       axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu(), color=COLORS[CO][CONDITION])
-       axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0], color="gray")
-       axis[CO,1].plot([145, 145], [0,0.045], '--', color="gray")
-       axis[CO,1].plot([180, 180], [0,0.045], '--', color="gray")
-       axis[CO,1].plot([215, 215], [0,0.045], '--', color="gray")
-
+       axis[CO,1].plot(grid_centered.cpu(), priorExpected.detach().cpu())
+       axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu())
+       axis[CO,1].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
        #axis[CO,2].scatter(grid_centered.cpu(), (bayesianEstimate_model-grid).detach().cpu())
-       axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
-       axis[CO,6].scatter(grid_centered[MASK].cpu(), (EGO_bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
+       axis[CO,2].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
+       axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu())
 
-
-
-       axis[N_CO,2+CONDITION].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_model-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
-       axis[N_CO,2+CONDITION].set_xticks(np.arange(90, 271, 45))
-       axis[N_CO,2+CONDITION].set_xticklabels(np.arange(-90, 91, 45))
-
-       axis[3,0].scatter(grid.cpu(), torch.softmax(init_parameters["f_t"], dim=0).detach().cpu())
+       axis[3,0].scatter(grid.cpu(), torch.softmax((1+init_parameters["f_t"][0])*SQUARED_STIMULUS_SIMILARITY(grid-180), dim=0).detach().cpu())
 #       axis[3,0].
        print("f_t for plot", torch.softmax(init_parameters["f_t"], dim=0))
        #if iteration > 1:
          #quit()
        #axis[CO,3].scatter(grid_centered.cpu(), (bayesianEstimate_sd_byStimulus_model).detach().cpu())
-       axis[CO,3].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_sd_byStimulus_model)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
+       axis[CO,3].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_sd_byStimulus_model)[MASK].detach().cpu())
        #axis[CO,3].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0])
 #       axis[CO,4].scatter(grid_centered.cpu(), (attraction).detach().cpu())
-       axis[CO,4].scatter(grid_centered[MASK].cpu(), (attraction[MASK]).detach().cpu(), color=COLORS[CO][CONDITION])
-       _, bayesianEstimate_2_4_repulsion, _, _, _, _, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], 1/GRID+MakeZeros(GRID), volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
+       axis[CO,4].scatter(grid_centered[MASK].cpu(), (attraction[MASK]).detach().cpu())
+       _, bayesianEstimate_2_4_repulsion, _, _, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], 1/GRID+MakeZeros(GRID), volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
        #axis[CO,5].scatter(grid_centered.cpu(), (bayesianEstimate_2_4_repulsion-grid).detach().cpu())
-       axis[CO,5].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_2_4_repulsion-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
+       axis[CO,5].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_2_4_repulsion-grid)[MASK].detach().cpu())
 
        kappa = 15
        kernel = torch.exp(kappa*SQUARED_STIMULUS_SIMILARITY(x_here.view(-1,1)-grid.view(1,-1))) / (2*math.pi*np.i0(kappa))
@@ -541,26 +479,22 @@ def model(grid):
 
 
 
-       axis[CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK], color=COLORS[CO][CONDITION])
-       axis[CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
+       axis[CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK])
+       axis[CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2)
        for w in [2,4,5,6,7]:
           axis[CO][w].set_ylim(-80, 80)
-       axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK], color=COLORS[CO][CONDITION])
-       axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
-       axis[N_CO][6+CONDITION].set_xticks(np.arange(90, 271, 45))
-       axis[N_CO][6+CONDITION].set_xticklabels(np.arange(-90, 91, 45))
+       axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK])
+       axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2)
        for w in [2,3,4,5,6,7]:
           axis[N_CO][w].set_ylim(-80, 80)
 
        bound1, bound2 = COs[CO]-60, COs[CO]+60
        for w in range(8):
          bound1, bound2 = CO_centered - 60 + 180, CO_centered + 60 + 180
-         axis[CO,w].plot([bound1, bound2], [0,0],color="black", linewidth=2)
-         axis[CO,w].scatter([CO_centered.cpu()+180], [0], color="k", s=50, edgecolor="k", zorder=100)
+         axis[CO,w].plot([bound1, bound2], [0,0])
+         axis[CO,w].scatter([CO_centered.cpu()], [0], color="purple", s=10)
          axis[CO,w].set_xlim(0,360)
-         axis[CO,w].set_xticks(np.arange(0, 361, 90))
-         axis[CO,w].set_xticklabels(np.arange(-180, 181, 90))
-
+       axis[3,0].set_ylim(0, 0.01)
    if iteration % 1000 == 0:
 
      axis[0,0].set_title("Resources")
@@ -569,12 +503,13 @@ def model(grid):
      axis[0,3].set_title("Variability")
      axis[0,4].set_title("Attraction")
      axis[0,5].set_title("Repulsion")
-     axis[0,6].set_title("Bias Ego")
-     axis[0,7].set_title("Bias Allo")
+     axis[0,6].set_title("Bias (0)")
+     axis[0,7].set_title("Bias (1)")
 
      print("Saving plot...")
 
-     savePlotPDFAndPNG(f"figures/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}_{FOURIER_BASIS_SIZE}")
+     plt.show()
+     savePlot(f"figures/{__file__}_{P}_{FOLD_HERE}_{REG_WEIGHT}_{GRID}_{FOURIER_BASIS_SIZE}.pdf")
      plt.close()
 
      crossValidLoss = 0
@@ -583,14 +518,13 @@ def model(grid):
       if not torch.any(condition == CONDITION):
           continue
       for CO in range(N_CO):
-       volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION], dim=0).detach()
-       prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0).detach()
+       #volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax((A - torch.sin(grid/180*math.pi).abs() + B * torch.sin(grid/180*math.pi).pow(2) * torch.cos(grid/180*math.pi/2).pow(2) * (1+torch.cos(grid/180*math.pi/2))/2).log(), dim=0)
+       D = init_parameters["prior"][1+CO]
+       prior = torch.nn.functional.softmax(C*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]+D-180)) #.detach()
        #shift_by = GRID-int((grid-COs[CO]).abs().argmin())
        print(f"COs[CO]: {COs[CO]}")
-       #prior = torch.cat([prior_overall[shift_by:], prior_overall[:shift_by]], dim=0)
 
-       loss_2_4, bayesianEstimate_2_4, bayesianEstimate_sd_byStimulus_2_4, attraction, _, _, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%100 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=testFolds, lossReduce='sum', centralOrientation=CO)
-       assert loss_2_4 < float('inf'), loss_2_4
+       loss_2_4, bayesianEstimate_2_4, bayesianEstimate_sd_byStimulus_2_4, attraction, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%100 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=testFolds, lossReduce='sum', centralOrientation=CO)
        crossValidLoss += loss_2_4
 
    regularizer1 = ((init_parameters["volume"][:,:,1:] - init_parameters["volume"][:,:,:-1]).pow(2).sum() + (init_parameters["volume"][:,:,0] - init_parameters["volume"][:,:,-1]).pow(2).sum())/GRID
@@ -598,8 +532,8 @@ def model(grid):
    regularizer2 = ((priorLogits[:,1:] - priorLogits[:,:-1]).pow(2).sum() + (priorLogits[:,0] - priorLogits[:,-1]).pow(2).sum())/GRID
    regularizer3 = ((init_parameters["priorByCO"][:,:,1:] - init_parameters["priorByCO"][:,:,:-1]).pow(2).sum() + (init_parameters["priorByCO"][:,:,0] - init_parameters["priorByCO"][:,:,-1]).pow(2).sum())/GRID
    regularizer4 = ((init_parameters["f_t"][1:] - init_parameters["f_t"][:-1]).pow(2).sum() + (init_parameters["f_t"][0] - init_parameters["f_t"][-1]).pow(2).sum())/GRID
-   regularizer_total = regularizer1 + regularizer2 + regularizer3 + regularizer4
- #  regularizer_total = regularizer4 # Here, only the transformation function should be regularized.
+ #  regularizer_total = regularizer1 + regularizer2 + regularizer3 + 
+   regularizer_total = regularizer3 + regularizer4
 
 
 
@@ -647,6 +581,7 @@ def model(grid):
    #     loss_, bayesianEstimate, bayesianEstimate_sd, attraction, encodingBias = computeBias(xValues, init_parameters["sigma_logit"][condition_], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, computePredictions=(iteration % 500 == 0), parameters=parameters, condition_=condition_, folds=testFolds, lossReduce='sum')
    #     crossValidLoss += loss_
 
+   print(parameters)
 #   print(lossesBy500)
    if iteration % 500 == 0 and iteration > 0:
        lossesBy500.append(float(loss))
@@ -684,15 +619,15 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
 # Initialize the model
 # Part: Initialize the model
   init_parameters = {}
-  init_parameters["log_motor_var"] = MakeZeros(N_CO, 2)
-  init_parameters["sigma_logit"] = -1 + MakeZeros(N_CO, 2)
+  init_parameters["log_motor_var"] = 4 + MakeZeros(N_CO, 2)
+  init_parameters["sigma_logit"] = -4 + MakeZeros(N_CO, 2)
   init_parameters["mixture_logit"] = MakeFloatTensor(N_CO*[-1])
-  init_parameters["f_t"] = MakeZeros(GRID)
-  init_parameters["sigma2_t"] = MakeZeros(1) - 8
-  init_parameters["sigma2_t2"] = MakeZeros(1) - 8
-  init_parameters["prior"] = MakeZeros(GRID)
-  init_parameters["volume"] = MakeZeros(N_CO,2,GRID) #Different for each condition
-  init_parameters["priorByCO"] = MakeZeros(N_CO,2,GRID)
+  init_parameters["f_t"] = MakeZeros(4)
+  init_parameters["sigma2_t"] = MakeZeros(1) -4
+  init_parameters["sigma2_t2"] = MakeZeros(1) -4
+  init_parameters["prior"] = MakeZeros(4)
+  init_parameters["volume"] = MakeZeros(1,1,4) #Different for each condition
+  init_parameters["priorByCO"] = MakeZeros(1,1,4)
  # for CO in range(3):
 #     init_parameters["priorByCO"][CO] = 0.5*(3*SQUARED_STIMULUS_SIMILARITY(grid-COs[CO]-180))
 
@@ -703,15 +638,13 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
 #  init_parameters["SIGMA_priorByCO"] = MakeZeros(N_CO,2*FOURIER_BASIS_SIZE)
   #init_parameters["SIGMA_volumeBySubject"] = MakeZeros(2,N_SUBJECTS,2*FOURIER_BASIS_SIZE) #Different for each condition
 
-  from util import loadParameters
-  loadParameters(init_parameters, f"logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_{P}_0_{REG_WEIGHT}_180.txt")
-  init_parameters["volume"][:,1] = init_parameters["volume"][:,0]
-  init_parameters["priorByCO"][:,1] = init_parameters["priorByCO"][:,0]
-  init_parameters["sigma_logit"][:,1] = init_parameters["sigma_logit"][:,0]
-  init_parameters["log_motor_var"][:,1] = init_parameters["log_motor_var"][:,0]
-
+#  from util import loadParameters
+#  loadParameters(init_parameters, "logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180.txt")
+#  init_parameters["volume"][:,1] = init_parameters["volume"][:,0]
+#  init_parameters["priorByCO"][:,1] = init_parameters["priorByCO"][:,0]
  # print(init_parameters["volume"])
 #  quit()
+
 
   for _, y in init_parameters.items():
     y.requires_grad = True

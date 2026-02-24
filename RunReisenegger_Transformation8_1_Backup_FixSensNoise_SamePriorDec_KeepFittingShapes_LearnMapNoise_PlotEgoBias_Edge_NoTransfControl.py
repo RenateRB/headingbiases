@@ -222,7 +222,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
 
   # now we a round of mapping
-  sigma2_t = .001 #+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
+  sigma2_t = 0.0001 #torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
  #  print(f"sigma2: {sigma2}")
   # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
 #  print(bayesianEstimate)
@@ -258,7 +258,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
      quit()
 #  print(mapping_likelihoods)
   # now a second transfer
-  sigma2_t2 = 2*torch.sigmoid(init_parameters["sigma2_t2"]) #maybe change 2 for 4?
+  sigma2_t2 = .01 + 2*torch.sigmoid(init_parameters["sigma2_t2"]) #maybe change 2 for 4?
   F_t = torch.cat([MakeZeros(1), torch.cumsum(torch.softmax(init_parameters["f_t"], dim=0), dim=0)], dim=0)
   transfer_likelihoods = torch.softmax(-(F_t[:-1].unsqueeze(0) - F_t[:-1].unsqueeze(1)).pow(2) / (sigma2_t2), dim=0)
   print("f_t", torch.softmax(init_parameters["f_t"], dim=0))
@@ -275,6 +275,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   #    print(f"NaNs in posterior in line 165.")
 
   bayesianEstimateSecond = CosineEstimator1.apply(grid_indices_here, posterior_second)
+  bayesianEstimateSecond = bayesianEstimate
 #  print(bayesianEstimateSecond, "hatTheta")
 
   ## Compute the motor likelihood
@@ -305,7 +306,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
   print(likelihood_including_trafo)
 
-  overall_likelihood = torch.matmul(motor_likelihoods, likelihood_including_trafo)
+  overall_likelihood = torch.matmul(motor_likelihoods, likelihoods)
 #  print(mapping_likelihoods)
   
 
@@ -422,6 +423,7 @@ def model(grid):
   lossAverageOver500 = 0
   crossValidLossAverageOver500 = 0
   ELBOAverageOver500 = 0
+  responseRangeMask = torch.where((grid-180).abs() < 110, 0*grid, 0*grid-1)
   for iteration in range(10000000):
    parameters = init_parameters
    ## In each iteration, recompute
@@ -459,9 +461,9 @@ def model(grid):
    for CONDITION in [1]:
     for CO in range(N_CO):
      volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION],dim=0) #.detach()
-     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0) #.detach()
+     prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION] + responseRangeMask, dim=0) #.detach()
      ## Run the model at its current parameter values.
-     loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias, EGO_bayesianEstimate_model, EGO_bayesianEstimate_sd_byStimulus_model = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
+     loss_model, bayesianEstimate_model, bayesianEstimate_sd_byStimulus_model, attraction, encodingBias, EGO_bayesianEstimate_model, EGO_bayesianEstimate_sd_byStimulus_model = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION].detach(), prior, volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
      loss += loss_model
 
      if iteration % 1000 == 0:
@@ -530,6 +532,7 @@ def model(grid):
        #axis[CO,5].scatter(grid_centered.cpu(), (bayesianEstimate_2_4_repulsion-grid).detach().cpu())
        axis[CO,5].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_2_4_repulsion-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
 
+
        kappa = 15
        kernel = torch.exp(kappa*SQUARED_STIMULUS_SIMILARITY(x_here.view(-1,1)-grid.view(1,-1))) / (2*math.pi*np.i0(kappa))
        kernel = kernel / kernel.sum(dim=0).max()
@@ -584,7 +587,7 @@ def model(grid):
           continue
       for CO in range(N_CO):
        volume = SENSORY_SPACE_VOLUME * torch.nn.functional.softmax(parameters["volume"][CO,CONDITION], dim=0).detach()
-       prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION], dim=0).detach()
+       prior = torch.nn.functional.softmax(0*parameters["prior"] + init_parameters["priorByCO"][CO,CONDITION] + responseRangeMask, dim=0).detach()
        #shift_by = GRID-int((grid-COs[CO]).abs().argmin())
        print(f"COs[CO]: {COs[CO]}")
        #prior = torch.cat([prior_overall[shift_by:], prior_overall[:shift_by]], dim=0)
@@ -689,7 +692,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   init_parameters["mixture_logit"] = MakeFloatTensor(N_CO*[-1])
   init_parameters["f_t"] = MakeZeros(GRID)
   init_parameters["sigma2_t"] = MakeZeros(1) - 8
-  init_parameters["sigma2_t2"] = MakeZeros(1) - 8
+  init_parameters["sigma2_t2"] = MakeZeros(1) - 5
   init_parameters["prior"] = MakeZeros(GRID)
   init_parameters["volume"] = MakeZeros(N_CO,2,GRID) #Different for each condition
   init_parameters["priorByCO"] = MakeZeros(N_CO,2,GRID)
@@ -704,7 +707,7 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
   #init_parameters["SIGMA_volumeBySubject"] = MakeZeros(2,N_SUBJECTS,2*FOURIER_BASIS_SIZE) #Different for each condition
 
   from util import loadParameters
-  loadParameters(init_parameters, f"logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_{P}_0_{REG_WEIGHT}_180.txt")
+  loadParameters(init_parameters, f"logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_Edge.py_{P}_0_{REG_WEIGHT}_180.txt")
   init_parameters["volume"][:,1] = init_parameters["volume"][:,0]
   init_parameters["priorByCO"][:,1] = init_parameters["priorByCO"][:,0]
   init_parameters["sigma_logit"][:,1] = init_parameters["sigma_logit"][:,0]

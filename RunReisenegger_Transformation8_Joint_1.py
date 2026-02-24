@@ -209,7 +209,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
   if condition_ == 1:
      # now we a round of mapping
-     sigma2_t = 10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
+     sigma2_t = .001 #10+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
     #  print(f"sigma2: {sigma2}")
      # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
    
@@ -258,10 +258,14 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
   motor_likelihoods = torch.exp(log_motor_likelihoods)
   ## Obtain the guessing rate, parameterized via the (inverse) logit transform as described in SI Appendix
   # Mixture of estimation and uniform response
-#  uniform_part = torch.sigmoid(parameters["mixture_logit"][centralOrientation])
+  uniform_part = torch.sigmoid(parameters["mixture_logit"][centralOrientation])
   ## The full likelihood then consists of a mixture of the motor likelihood calculated before, and the uniform
   ## distribution on the full space.
- # motor_likelihoods = (1-uniform_part) * motor_likelihoods + (uniform_part / (2*math.pi) + 0*motor_likelihoods)
+  motor_likelihoods = (1-uniform_part) * motor_likelihoods + (uniform_part / (2*math.pi) + 0*motor_likelihoods)
+#  assert motor_likelihoods.log().abs().max() < 1e20, (motor_variance, log_motor_likelihoods.max(), log_motor_likelihoods.min())
+  # I want to know which indices have zeros
+  print((motor_likelihoods == 0).nonzero())
+  print(motor_likelihoods[0,2])
 
   
   if condition_ == 1:
@@ -628,11 +632,11 @@ for P1 in [P]: #, 2, 4, 6, 8, 10]:
 # Part: Initialize the model
   init_parameters = {}
   init_parameters["log_motor_var"] = MakeZeros(N_CO, 2)
-  init_parameters["sigma_logit"] = -1 + MakeZeros(N_CO, 2)
+  init_parameters["sigma_logit"] = -4 + MakeZeros(N_CO, 2)
   init_parameters["mixture_logit"] = MakeFloatTensor(N_CO*[-1])
   init_parameters["f_t"] = MakeZeros(GRID)
-  init_parameters["sigma2_t"] = MakeZeros(1)
-  init_parameters["sigma2_t2"] = MakeZeros(1)
+  init_parameters["sigma2_t"] = MakeZeros(1) -4
+  init_parameters["sigma2_t2"] = MakeZeros(1) -4
   init_parameters["prior"] = MakeZeros(GRID)
   init_parameters["volume"] = MakeZeros(N_CO,2,GRID) #Different for each condition
   init_parameters["priorByCO"] = MakeZeros(N_CO,2,GRID)

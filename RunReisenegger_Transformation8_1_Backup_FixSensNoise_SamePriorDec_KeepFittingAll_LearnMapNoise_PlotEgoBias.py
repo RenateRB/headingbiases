@@ -222,7 +222,7 @@ def computeBias(stimulus_, sigma_logit, prior, volumeElement, n_samples=100, sho
 
 
   # now we a round of mapping
-  sigma2_t = .001 #+100*torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
+  sigma2_t = torch.sigmoid(init_parameters["sigma2_t"]) #maybe change 2 for 4?
  #  print(f"sigma2: {sigma2}")
   # Part: Obtain the transfer function as the cumulative sum of the discretized resource allocation (referred to as `volume` element due to the geometric interpretation by Wei&Stocker 2015)
 #  print(bayesianEstimate)
@@ -529,6 +529,7 @@ def model(grid):
        _, bayesianEstimate_2_4_repulsion, _, _, _, _, _ = computeBias(xValues, init_parameters["sigma_logit"][CO,CONDITION], 1/GRID+MakeZeros(GRID), volume, n_samples=1000, grid=grid, responses_=observations_y, parameters=parameters, computePredictions=(iteration%500 == 0), sigma_stimulus=0, sigma2_stimulus=0, condition_=CONDITION, folds=trainFolds, lossReduce='sum', centralOrientation=CO)
        #axis[CO,5].scatter(grid_centered.cpu(), (bayesianEstimate_2_4_repulsion-grid).detach().cpu())
        axis[CO,5].scatter(grid_centered[MASK].cpu(), (bayesianEstimate_2_4_repulsion-grid)[MASK].detach().cpu(), color=COLORS[CO][CONDITION])
+
 
        kappa = 15
        kernel = torch.exp(kappa*SQUARED_STIMULUS_SIMILARITY(x_here.view(-1,1)-grid.view(1,-1))) / (2*math.pi*np.i0(kappa))
