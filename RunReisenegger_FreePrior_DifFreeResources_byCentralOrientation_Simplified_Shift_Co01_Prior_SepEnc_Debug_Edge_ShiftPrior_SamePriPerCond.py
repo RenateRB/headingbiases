@@ -386,7 +386,7 @@ def model(grid):
      # at CO = +90, separator = GRID//4
      separator = [int(-COs[CO]/MAX_GRID*GRID), 0, int((1-COs[CO]/MAX_GRID)*GRID)][CO]
 
-     shiftedPrior = init_parameters["priorByCO"][0,CONDITION]
+     shiftedPrior = init_parameters["priorByCO"][0,0]
 #     shiftedPrior = 5*torch.cos(1*grid/GRID*2*math.pi)
      shiftedPrior = torch.cat([shiftedPrior[separator:], shiftedPrior[:separator]], dim=0)
 
@@ -531,7 +531,7 @@ def model(grid):
        # at CO = +90, separator = GRID//4
        separator = [int(-COs[CO]/MAX_GRID*GRID), 0, int((1-COs[CO]/MAX_GRID)*GRID)][CO]
   
-       shiftedPrior = init_parameters["priorByCO"][0,CONDITION]
+       shiftedPrior = init_parameters["priorByCO"][0,0]
        shiftedPrior = torch.cat([shiftedPrior[separator:], shiftedPrior[:separator]], dim=0)
   
        prior = torch.nn.functional.softmax(0*parameters["prior"] + shiftedPrior + responseRangeMask, dim=0)
