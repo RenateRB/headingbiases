@@ -386,7 +386,7 @@ def model(grid):
      # at CO = +90, separator = GRID//4
      separator = [int(-COs[CO]/MAX_GRID*GRID), 0, int((1-COs[CO]/MAX_GRID)*GRID)][CO]
 
-     shiftedPrior = init_parameters["priorByCO"][0,CONDITION]
+     shiftedPrior = init_parameters["priorByCO"][0,0]
 #     shiftedPrior = 5*torch.cos(1*grid/GRID*2*math.pi)
      shiftedPrior = torch.cat([shiftedPrior[separator:], shiftedPrior[:separator]], dim=0)
 
@@ -465,7 +465,6 @@ def model(grid):
        axis[CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
        for w in [2,4,5,6,7]:
           axis[CO][w].set_ylim(-80, 80)
-       axis[N_CO][6+CONDITION].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0], '--', color = "gray" )
        axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK], color=COLORS[CO][CONDITION])
        axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
        axis[N_CO][6+CONDITION].set_xlim(80,280)
@@ -532,7 +531,7 @@ def model(grid):
        # at CO = +90, separator = GRID//4
        separator = [int(-COs[CO]/MAX_GRID*GRID), 0, int((1-COs[CO]/MAX_GRID)*GRID)][CO]
   
-       shiftedPrior = init_parameters["priorByCO"][0,CONDITION]
+       shiftedPrior = init_parameters["priorByCO"][0,0]
        shiftedPrior = torch.cat([shiftedPrior[separator:], shiftedPrior[:separator]], dim=0)
   
        prior = torch.nn.functional.softmax(0*parameters["prior"] + shiftedPrior + responseRangeMask, dim=0)
