@@ -1,7 +1,9 @@
 # Heading Biases
 
 Repo for the computational model of "Reference frames reverse biases in human heading perception" (about to be submitted)
+
 Code based on Hahn & Wei (2024). A unifying theory explains seemingly contradictory biases in perceptual estimation. *Nature Neuroscience*.
+
 
 Here are the results of the 4 different models with different constraints:
 
@@ -11,7 +13,7 @@ This constraint proved to be the most important one to achieve biologically plau
 
 Command:
 
-    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py 2 0 1.0 180 50
+    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py 2 0 10.0 180 50
 
 
 Fit (REG_WEIGHT = 10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.png)
@@ -19,127 +21,84 @@ Fit (REG_WEIGHT = 10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResource
 PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.pdf)
 
 
-Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.txt)
+Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180.txt)
 
 All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.txt)
 
 
 
 
-## Fit on Allocentric Condition
+## Fit with prior invariance across ranges (with rotation) and resources invariance across ranges
 
-### Direct fit, no transformation
+This fit is a bit worse (higher NLL) than the previous one.
 
 Command:
 
-    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py 2 0 1.0 180 50
+    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO.py 2 0 10.0 180 50
   
-Fit (REG_WEIGHT=1.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_1.0_180_50.png)
+Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO.py_2_0_10.0_180_50.png)
 
-Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_10.0_180_50.png)
-
-PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_1.0_180_50.pdf)
+PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO.py_2_0_10.0_180_50.pdf)
 
 
-Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_1.0_180.txt)
+Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO.py_2_0_10.0_180.txt)
 
-All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co1_Prior_SepEnc_Debug.py_2_0_1.0_180.txt)
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO.py_2_0_10.0_180.txt)
 
-#### Fit across exponents
 
-TODO
 
-### Transformation after decoding
+## Fit with prior invariance across ranges and resources invariance across conditions
 
-Freeze encoding and prior based on the egocentric condition
-
-Here, there are two rounds of Bayesian decoding: one before the transformation, and one after it.
-
-@TODO: (MH) It would probably be nice to fix the visualization of "Attraction", which doesn't seem to make sense here. One needs to consider how it interacts with the transformation.
+This fit is a bit worse than the one we just had.
 
 Command:
 
-    python3 RunReisenegger_Transformation8_1.py 2 0 1.0 180 50
+    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCond.py 2 0 10.0 180 50
 
-Fit (REG_WEIGHT=1.0): ![Fit](figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.png)
-
-Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_Transformation8_1.py_2_0_10.0_180_50.png)
+Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCond.py_2_0_10.0_180_50.png)
 
 
-PDF link: [here](figures/RunReisenegger_Transformation8_1.py_2_0_1.0_180_50.pdf)
+PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCond.py_2_0_10.0_180_50.pdf)
 
-Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt)
+Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCond.py_2_0_10.0_180.txt)
 
-All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8_1.py_2_0_1.0_180.txt)
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCond.py_2_0_10.0_180.txt)
 
-The goodness of fit is much stronger than when we do direct fitting. The difference in fact is strikingly large. We need to sanity-check that this is real and not some kind of artifact.
 
-#### Fit across exponents
+
+## Fit with prior invariance across ranges and resources invariance across ranges and conditions
+
+Interestingly, adding both contraints for the resources results in the best fit we found. Presumably because it reduces overfitting.
+
+Command:
+
+    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO_SameEncPerCond.py 2 0 10.0 180 50
+
+Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO_SameEncPerCond.py_2_0_10.0_180_50.png)
+
+
+PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO_SameEncPerCond.py_2_0_10.0_180_50.pdf)
+
+Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO_SameEncPerCond.py_2_0_10.0_180.txt)
+
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SameEncPerCO_SameEncPerCond.py_2_0_10.0_180.txt)
+
+
+
+## Fit with prior invariance across ranges and conditions
+
+This second constraint on the prior dramatically hurts the fit.
 
 Commands:
 
-    python3 RunReisenegger_Transformation8_1_L0-L0.py 0-0 0 1.0 180 50
-    python3 RunReisenegger_Transformation8_1_L0-L0.py 0-0 0 10.0 180 50
-    python3 RunReisenegger_Transformation8_1_L1.py 1 0 1.0 180 50
-    python3 RunReisenegger_Transformation8_1_L1.py 1 0 10.0 180 50
-    for i in 4 6 8 ; do python3 RunReisenegger_Transformation8_1.py $i 0 1.0 180 50 ; done
-    for i in 4 6 8 ; do python3 RunReisenegger_Transformation8_1.py $i 0 10.0 180 50 ; done
+    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SamePriPerCond.py 2 0 10.0 180 50
+
+Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SamePriPerCond.py_2_0_10.0_180_50.png)
 
 
-### Transformation without decoding
+PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SamePriPerCond.py_2_0_10.0_180_50.pdf)
 
-Freeze encoding and prior based on the egocentric condition
+Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SamePriPerCond.py_2_0_10.0_180.txt)
 
-This is close to the model from Remington et al's work. This one is intermediate between the previous and following versions; those two are probably better motivated than this one itself.
-
-Command:
-
-    python3 RunReisenegger_Transformation8_1_OnlyOneDecoding.py 2 0 1.0 180 50
-
-Fit (REG_WEIGHT=1.0): ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180_50.png)
-
-Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_10.0_180_50.png)
-
-PDF link: [here](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180_50.pdf)
-
-
-Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt)
-
-Performance seems slightly worse than the previous version.
-
-All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8_1_OnlyOneDecoding.py_2_0_1.0_180.txt)
-
-#### Fit across exponents
-
-TODO
-
-
-### Transformation without decoding (second version, simplest)
-
-Freeze encoding and prior based on the egocentric condition
-
-This is close to the model from Remington et al's work.
-
-Command:
-
-    python3 RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py 2 0 1.0 180 50
-
-Fit (REG_WEIGHT=1.0): ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_1.0_180_50.png)
-
-Fit (REG_WEIGHT=10.0): ![Fit](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_10.0_180_50.png)
-
-PDF link: [here](figures/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_1.0_180_50.pdf)
-
-
-Goodness of fit: [see here](losses/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_1.0_180.txt)
-
-Performance seems slightly worse than the previous version.
-
-All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_Transformation8_1_OnlyOneDecoding_2.py_2_0_1.0_180.txt)
-
-#### Fit across exponents
-
-TODO
-
-
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior_SamePriPerCond.py_2_0_10.0_180.txt)
 
