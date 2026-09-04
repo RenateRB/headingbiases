@@ -23,7 +23,7 @@ PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrie
 
 Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180.txt)
 
-All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.txt)
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180.txt)
 
 
 
