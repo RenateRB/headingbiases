@@ -431,7 +431,7 @@ def model(grid):
 #       axis[CO,1].plot(grid_centered[0:179].cpu(), priorExpected[0:179].detach().cpu())
  #      axis[CO,1].plot(grid_centered[180:].cpu(), priorExpected[180:].detach().cpu())
        axis[CO,1].plot(grid_centered.cpu(), priorExpected.detach().cpu())
-       axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu(), color=COLORS[CO][CONDITION])
+       axis[CO,1].scatter(grid_centered.cpu(), prior.detach().cpu(), color="gray")
        axis[CO,1].plot([145, 145], [0,0.05], '--', color="gray")
        axis[CO,1].plot([180, 180], [0,0.05], '--', color="gray")
        axis[CO,1].plot([215, 215], [0,0.05], '--', color="gray")
@@ -465,6 +465,7 @@ def model(grid):
        axis[CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
        for w in [2,4,5,6,7]:
           axis[CO][w].set_ylim(-80, 80)
+       axis[N_CO][6+CONDITION].plot([grid_centered[0].cpu(), grid_centered[-1].cpu()], [0,0], '--', color = "gray" )
        axis[N_CO][6+CONDITION].scatter(grid_centered.cpu()[MASK], y_smoothed.cpu()[MASK], color=COLORS[CO][CONDITION])
        axis[N_CO][6+CONDITION].scatter(x_here_centered.cpu(), bias.cpu(), s=0.1, alpha=0.2, color=COLORS[CO][CONDITION])
        axis[N_CO][6+CONDITION].set_xlim(80,280)
