@@ -1,35 +1,30 @@
 # Heading Biases
 
+Repo for the computational model of "Reference frames reverse biases in human heading perception" (about to be submitted)
+Code based on Hahn & Wei (2024). A unifying theory explains seemingly contradictory biases in perceptual estimation. *Nature Neuroscience*.
 
+Here are the results of the 4 different models with different constraints:
 
-## Fit on Egocentric Condition
+## Fit with prior invariance across ranges (but rotated according to the central heading)
 
-This is a direct fit, with no transformation.
+This constraint proved to be the most important one to achieve biologically plausible results.
 
 Command:
 
     python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py 2 0 1.0 180 50
 
-Fit (REG_WEIGHT = 1.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_1.0_180_50.png)
 
-Fit (REG_WEIGHT = 10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_10.0_180_50.png)
+Fit (REG_WEIGHT = 10.0): ![Fit](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.png)
 
-PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_1.0_180_50.pdf)
+PDF link: [here](figures/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.pdf)
 
 
-Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_1.0_180.txt)
+Goodness of fit: [see here](losses/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.txt)
 
-All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py_2_0_1.0_180.txt)
+All fitted parameters: [see here](logs/CROSSVALID/RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co01_Prior_SepEnc_Debug_Edge_ShiftPrior.py_2_0_10.0_180_50.txt)
 
-#### Fit across exponents
 
-Command:
 
-    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_L0.py 0 0 1.0 180 50
-    python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug_L1.py 1 0 1.0 180 50
-    for i in 4 6 8 ; do python3 RunReisenegger_FreePrior_DifFreeResources_byCentralOrientation_Simplified_Shift_Co0_Prior_SepEnc_Debug.py $i 0 1.0 180 50 ; done
-
-Resulting goodness of fit: TODO plot PNG
 
 ## Fit on Allocentric Condition
 
